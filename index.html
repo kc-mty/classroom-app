@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧課堂流程與家課管理系統 (GitHub 雲端版)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tab-panel { display: none !important; }
+        .tab-panel.active { display: block !important; }
+        .status-btn { transition: all 0.2s ease; }
+        @keyframes pulse-fast { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        .picker-anim { animation: pulse-fast 0.15s infinite; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans text-lg">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3 mb-2 md:mb-0">
+                <i class="fa-solid fa-chalkboard-user text-3xl text-amber-300"></i>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">智慧課堂管理系統</h1>
+                    <span id="github-status-tag" class="text-xs bg-indigo-900 text-indigo-200 px-2.5 py-0.5 rounded-full border border-indigo-500 font-bold inline-flex items-center">
+                        <i class="fa-brands fa-github mr-1"></i>尚未連線 GitHub
+                    </span>
+                </div>
+            </div>
+
+            <!-- 分頁按鈕區 -->
+            <nav class="flex space-x-2 bg-indigo-900/60 p-1.5 rounded-xl border border-indigo-500/30">
+                <button onclick="switchTab('lesson')" id="btn-tab-lesson" class="nav-btn px-5 py-2.5 rounded-lg font-bold text-base transition-all bg-white text-indigo-900 shadow-md">
+                    <i class="fa-solid fa-book-open mr-2"></i>課堂內容
+                </button>
+                <button onclick="switchTab('homework')" id="btn-tab-homework" class="nav-btn px-5 py-2.5 rounded-lg font-bold text-base transition-all text-indigo-100 hover:bg-indigo-800">
+                    <i class="fa-solid fa-list-check mr-2"></i>家課交收
+                </button>
+                <button onclick="switchTab('admin')" id="btn-tab-admin" class="nav-btn px-5 py-2.5 rounded-lg font-bold text-base transition-all text-indigo-100 hover:bg-indigo-800 flex items-center">
+                    <i class="fa-solid fa-user-gear mr-2"></i>後台管理
+                    <span id="admin-badge" class="ml-2 w-2.5 h-2.5 rounded-full bg-emerald-400 hidden"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full">
+
+        <!-- ==================== 分頁一：課堂內容 + 隨機抽問 ==================== -->
+        <section id="tab-lesson" class="tab-panel active space-y-6">
+            
+            <!-- 🎲 課堂互動工具：隨機抽問學生卡片 -->
+            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-2xl p-6 shadow-md flex flex-wrap justify-between items-center gap-6">
+                <div class="space-y-1">
+                    <span class="bg-amber-800/40 text-amber-100 text-xs font-bold px-3 py-1 rounded-full border border-amber-300/30">
+                        <i class="fa-solid fa-dice mr-1"></i>課堂互動工具
+                    </span>
+                    <h3 class="text-2xl font-black flex items-center">
+                        課堂隨機抽問學生
+                    </h3>
+                    <p class="text-amber-100 text-sm">防重複抽中模式：剩餘 <strong id="picker-remaining-count" class="text-white text-base">0</strong> 人未被抽中</p>
+                </div>
+
+                <div class="flex items-center space-x-4 bg-white/10 p-3 rounded-2xl border border-white/20">
+                    <!-- 顯示抽中名字 -->
+                    <div id="picker-display" class="bg-white text-amber-950 font-black text-3xl px-8 py-3 rounded-xl shadow-inner min-w-[180px] text-center transition-all">
+                        準備抽問
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <button onclick="pickRandomStudent()" class="bg-amber-900 hover:bg-amber-950 text-white font-bold px-6 py-3 rounded-xl text-base transition shadow-lg active:scale-95 flex items-center">
+                            <i class="fa-solid fa-shuffle mr-2"></i>抽點學生
+                        </button>
+                        <button onclick="resetPickerHistory()" class="text-xs bg-white/20 hover:bg-white/30 text-white py-1 px-2 rounded-lg transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>重置抽取名單
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 課堂主體內容 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                <div class="flex flex-wrap justify-between items-start border-b border-slate-200 pb-6 mb-6 gap-4">
+                    <div>
+                        <span class="inline-block px-4 py-1.5 bg-indigo-100 text-indigo-800 text-base font-bold rounded-full mb-3" id="display-date">日期載入中...</span>
+                        <h2 class="text-3xl font-extrabold text-slate-900" id="display-title">尚未設定課堂主題</h2>
+                    </div>
+                    <button onclick="switchTab('admin')" class="text-base bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2.5 rounded-xl border border-indigo-200 transition flex items-center">
+                        <i class="fa-solid fa-pen-to-square mr-2"></i>編輯課堂內容
+                    </button>
+                </div>
+
+                <div class="mb-8 bg-amber-50 border-l-8 border-amber-400 p-6 rounded-r-2xl">
+                    <h3 class="font-bold text-amber-950 text-xl flex items-center mb-2">
+                        <i class="fa-solid fa-bullseye text-2xl mr-3 text-amber-600"></i>課堂學習目標
+                    </h3>
+                    <p class="text-amber-900 text-lg leading-relaxed whitespace-pre-line font-medium" id="display-objectives">尚無目標設定</p>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-800 text-2xl flex items-center border-b pb-3">
+                        <i class="fa-solid fa-clock-rotate-left mr-3 text-indigo-600"></i>課堂流程安排
+                    </h3>
+                    <div id="display-flow-list" class="space-y-4 pt-2"></div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-200 grid md:grid-cols-2 gap-6">
+                    <div class="bg-blue-50/80 p-6 rounded-xl border border-blue-200">
+                        <h4 class="font-bold text-blue-950 text-xl mb-2 flex items-center"><i class="fa-solid fa-bell mr-2 text-blue-600"></i>本堂課後作業 / 公告</h4>
+                        <p class="text-blue-900 text-lg leading-relaxed whitespace-pre-line" id="display-announcement">無</p>
+                    </div>
+                    <div class="bg-emerald-50/80 p-6 rounded-xl border border-emerald-200">
+                        <h4 class="font-bold text-emerald-950 text-xl mb-2 flex items-center"><i class="fa-solid fa-box-archive mr-2 text-emerald-600"></i>課堂準備器材 / 教具</h4>
+                        <p class="text-emerald-900 text-lg leading-relaxed whitespace-pre-line" id="display-materials">無</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 分頁二：家課交收情況 ==================== -->
+        <section id="tab-homework" class="tab-panel space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-6 justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <label for="hw-select" class="font-bold text-lg text-slate-800 shrink-0">選擇習作：</label>
+                    <select id="hw-select" onchange="renderHomeworkTable()" class="bg-slate-50 border-2 border-indigo-200 text-slate-900 text-lg font-bold rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 min-w-[260px]"></select>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-base font-bold">
+                    <span class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl border border-slate-200">總人數：<strong id="stat-total" class="text-lg">0</strong></span>
+                    <span class="px-4 py-2 bg-emerald-100 text-emerald-900 rounded-xl border border-emerald-300">已繳交：<strong id="stat-submitted" class="text-lg">0</strong></span>
+                    <span class="px-4 py-2 bg-rose-100 text-rose-900 rounded-xl border border-rose-300">未繳交：<strong id="stat-missing" class="text-lg">0</strong></span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                    <span class="text-base font-medium text-slate-600">
+                        <i class="fa-solid fa-hand-pointer text-indigo-600 mr-2"></i>點擊切換：
+                        <span class="text-emerald-700 font-bold">已交</span> ➔ 
+                        <span class="text-rose-600 font-bold">未交</span> ➔ 
+                        <span class="text-amber-600 font-bold">遲交</span> ➔ 
+                        <span class="text-blue-600 font-bold">需重作</span>
+                    </span>
+                    <button onclick="markAllAsSubmitted()" class="text-base bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl transition shadow">
+                        <i class="fa-solid fa-check-double mr-2"></i>全選標示為已交
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-lg">
+                        <thead class="bg-slate-100 text-slate-700 font-bold text-base border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-4 w-20 text-center">#</th>
+                                <th class="px-6 py-4 w-48">學生姓名</th>
+                                <th class="px-6 py-4 w-56 text-center">繳交狀態</th>
+                                <th class="px-6 py-4">備註 / 評語</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hw-table-body" class="divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 分頁三：後台管理 ==================== -->
+        <section id="tab-admin" class="tab-panel space-y-6">
+
+            <!-- 登入牆 (密碼: 0926) -->
+            <div id="admin-login-card" class="max-w-xl mx-auto bg-white p-10 rounded-2xl shadow-md border border-slate-200 text-center my-12">
+                <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">後台管理驗證</h2>
+                <form onsubmit="handleAdminLogin(event)" class="space-y-6">
+                    <input type="password" id="admin-password-input" placeholder="請輸入密碼 (預設: 0926)" class="w-full px-5 py-3.5 border-2 border-slate-300 rounded-xl text-xl text-center focus:outline-none focus:border-indigo-600 font-bold">
+                    <p id="login-error" class="text-base text-rose-600 font-bold hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i>密碼錯誤！</p>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl text-lg transition shadow-md">解鎖進入後台</button>
+                </form>
+            </div>
+
+            <!-- 後台核心內容 -->
+            <div id="admin-panel" class="hidden space-y-8">
+                
+                <div class="bg-indigo-900 text-indigo-100 p-5 rounded-2xl flex justify-between items-center shadow-md">
+                    <div class="flex items-center space-x-3 text-lg font-bold">
+                        <i class="fa-solid fa-shield-halved text-emerald-400 text-2xl"></i>
+                        <span>已取得後台管理權限</span>
+                    </div>
+                    <button onclick="adminLogout()" class="text-base bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-4 py-2 rounded-xl border border-indigo-600 transition font-bold">登出後台</button>
+                </div>
+
+                <!-- 🐙 GitHub 自動存檔設定區 -->
+                <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-md space-y-4">
+                    <h3 class="text-2xl font-bold border-b border-slate-700 pb-4 flex items-center">
+                        <i class="fa-brands fa-github text-3xl mr-3 text-indigo-400"></i>GitHub 永久自動雲端同步
+                    </h3>
+                    <p class="text-base text-slate-300 leading-relaxed">
+                        設定完成後，每次修改資料都會**自動 commit 儲存回 GitHub 專案**，換任何電腦開啟網頁都能自動載入！
+                    </p>
+
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-1">GitHub 用戶名稱 (Username)</label>
+                            <input type="text" id="gh-owner" placeholder="例如：teacher-jack" class="w-full p-3 bg-slate-800 border border-slate-600 rounded-xl text-white text-base">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-1">倉庫名稱 (Repo Name)</label>
+                            <input type="text" id="gh-repo" placeholder="例如：classroom-app" class="w-full p-3 bg-slate-800 border border-slate-600 rounded-xl text-white text-base">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-1">Personal Access Token (PAT)</label>
+                            <input type="password" id="gh-token" placeholder="ghp_..." class="w-full p-3 bg-slate-800 border border-slate-600 rounded-xl text-white text-base font-mono">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button onclick="saveGitHubConfig()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl text-base transition shadow">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>儲存 GitHub 設定並連線
+                        </button>
+                        <button onclick="loadFromGitHub()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl text-base transition shadow">
+                            <i class="fa-solid fa-cloud-arrow-down mr-2"></i>手動從 GitHub 載入
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 編輯課堂內容 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <h3 class="text-2xl font-bold text-slate-900 border-b pb-4 flex items-center">
+                        <i class="fa-solid fa-pen-to-square mr-3 text-indigo-600"></i>編輯課堂內容
+                    </h3>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-base font-bold text-slate-700 mb-2">課堂單元主題</label>
+                            <input type="text" id="edit-title" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-base font-bold text-slate-700 mb-2">上課日期</label>
+                            <input type="text" id="edit-date" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-base font-bold text-slate-700 mb-2">課堂學習目標</label>
+                        <textarea id="edit-objectives" rows="3" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-base font-bold text-slate-700 mb-3">課堂流程步驟</label>
+                        <div id="edit-flow-container" class="space-y-3 mb-4"></div>
+                        <button onclick="addFlowStep()" class="text-base bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-5 py-3 rounded-xl border border-slate-300 transition">
+                            <i class="fa-solid fa-plus mr-2 text-indigo-600"></i>新增流程步驟
+                        </button>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-base font-bold text-slate-700 mb-2">本堂課後作業 / 公告</label>
+                            <textarea id="edit-announcement" rows="3" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-base font-bold text-slate-700 mb-2">課堂準備器材 / 教具</label>
+                            <textarea id="edit-materials" rows="3" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg"></textarea>
+                        </div>
+                    </div>
+                    <button onclick="saveLessonData()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold px-8 py-3.5 rounded-xl transition shadow-lg">儲存並同步至 GitHub</button>
+                </div>
+
+                <!-- 學生名單管理 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <h3 class="text-2xl font-bold text-slate-900 border-b pb-4 flex items-center">
+                        <i class="fa-solid fa-users mr-3 text-indigo-600"></i>學生名單管理
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-base font-bold text-slate-700 mb-2">批次匯入學生名單 (一行一個姓名)</label>
+                            <textarea id="import-students-text" rows="8" placeholder="陳大文&#10;林小明&#10;張美麗" class="w-full p-3.5 border-2 border-slate-300 rounded-xl text-lg"></textarea>
+                            <button onclick="batchImportStudents()" class="mt-3 text-base bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl transition shadow">匯入並替換名單</button>
+                        </div>
+                        <div>
+                            <label class="block text-base font-bold text-slate-700 mb-2">目前學生名單 (<span id="admin-student-count">0</span> 人)</label>
+                            <div id="admin-student-list" class="max-h-64 overflow-y-auto border-2 border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 習作項目管理 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <h3 class="text-2xl font-bold text-slate-900 border-b pb-4 flex items-center">
+                        <i class="fa-solid fa-book mr-3 text-indigo-600"></i>習作項目管理
+                    </h3>
+                    <div class="flex gap-3 max-w-lg">
+                        <input type="text" id="new-hw-name" placeholder="輸入習作名稱" class="flex-grow p-3.5 border-2 border-slate-300 rounded-xl text-lg font-bold">
+                        <button onclick="addNewHomework()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold px-6 py-3.5 rounded-xl transition shadow shrink-0">新增習作</button>
+                    </div>
+                    <div id="admin-hw-list" class="flex flex-wrap gap-3 pt-2"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const defaultData = {
+            lesson: {
+                title: "第一課：科學探索與實驗基本規範",
+                date: "2026/10/20 (二)",
+                objectives: "1. 認識實驗室安全守則\n2. 掌握基本觀察與記錄方法",
+                flow: [
+                    { time: "05 分鐘", title: "引起動機", detail: "展示常見實驗儀器圖片進行問答" },
+                    { time: "15 分鐘", title: "觀念講解", detail: "講解實驗室安全法則" }
+                ],
+                announcement: "請同學於本週五前繳交單元一工作紙。",
+                materials: "酒精燈、試管架、保護眼鏡"
+            },
+            students: ["陳大文", "林小明", "張美麗", "李志強", "黃靜宜"],
+            homeworks: ["單元一工作紙", "實驗預習報告"],
+            submissions: {
+                "單元一工作紙": { "陳大文": "submitted", "林小明": "missing" }
+            },
+            github: { owner: "", repo: "", token: "" },
+            githubSha: ""
+        };
+
+        let appData = JSON.parse(localStorage.getItem('teacher_app_data_gh')) || defaultData;
+        let uncalledStudents = [];
+        let isAdminLoggedIn = false;
+
+        // 本地儲存與觸發 GitHub 同步
+        function saveData() {
+            localStorage.setItem('teacher_app_data_gh', JSON.stringify(appData));
+            if (appData.github.owner && appData.github.repo && appData.github.token) {
+                saveToGitHub();
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-white', 'text-indigo-900', 'shadow-md');
+                b.classList.add('text-indigo-100');
+            });
+
+            const targetPanel = document.getElementById(`tab-${tabId}`);
+            if (targetPanel) targetPanel.classList.add('active');
+
+            const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+            if (targetBtn) {
+                targetBtn.classList.add('bg-white', 'text-indigo-900', 'shadow-md');
+                targetBtn.classList.remove('text-indigo-100');
+            }
+
+            if (tabId === 'lesson') renderLessonTab();
+            if (tabId === 'homework') renderHomeworkTab();
+            if (tabId === 'admin') renderAdminTab();
+        }
+
+        // ==================== 🎲 隨機點名機制 ====================
+        function resetPickerHistory() {
+            uncalledStudents = [...(appData.students || [])];
+            updatePickerCount();
+            document.getElementById('picker-display').innerText = "準備抽問";
+        }
+
+        function updatePickerCount() {
+            document.getElementById('picker-remaining-count').innerText = uncalledStudents.length;
+        }
+
+        function pickRandomStudent() {
+            if (!appData.students || appData.students.length === 0) {
+                alert('請先至後台匯入學生名單！');
+                return;
+            }
+
+            if (uncalledStudents.length === 0) {
+                uncalledStudents = [...appData.students]; // 全員被抽過後重置
+            }
+
+            const display = document.getElementById('picker-display');
+            display.classList.add('picker-anim');
+            
+            let count = 0;
+            const timer = setInterval(() => {
+                const randTemp = appData.students[Math.floor(Math.random() * appData.students.length)];
+                display.innerText = randTemp;
+                count++;
+
+                if (count > 20) {
+                    clearInterval(timer);
+                    display.classList.remove('picker-anim');
+                    
+                    // 從未被抽中的列表中隨機抽出一名
+                    const pickedIdx = Math.floor(Math.random() * uncalledStudents.length);
+                    const selectedStudent = uncalledStudents[pickedIdx];
+                    
+                    // 移除已被抽中的學生
+                    uncalledStudents.splice(pickedIdx, 1);
+                    
+                    display.innerText = selectedStudent;
+                    updatePickerCount();
+                }
+            }, 70);
+        }
+
+        // ==================== 渲染頁面 ====================
+        function renderLessonTab() {
+            if (uncalledStudents.length === 0 && appData.students) {
+                uncalledStudents = [...appData.students];
+            }
+            updatePickerCount();
+
+            const lesson = appData.lesson || {};
+            document.getElementById('display-title').innerText = lesson.title || '尚未設定主題';
+            document.getElementById('display-date').innerText = lesson.date || '未設定日期';
+            document.getElementById('display-objectives').innerText = lesson.objectives || '無';
+            document.getElementById('display-announcement').innerText = lesson.announcement || '無';
+            document.getElementById('display-materials').innerText = lesson.materials || '無';
+
+            const flowContainer = document.getElementById('display-flow-list');
+            flowContainer.innerHTML = '';
+            (lesson.flow || []).forEach((step, idx) => {
+                flowContainer.innerHTML += `
+                    <div class="flex items-start bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <span class="bg-indigo-600 text-white font-bold text-base px-3 py-1 rounded-lg mr-4">${step.time || `步驟 ${idx+1}`}</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-xl">${step.title}</h4>
+                            <p class="text-slate-700 text-lg mt-1">${step.detail}</p>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderHomeworkTab() {
+            const hwSelect = document.getElementById('hw-select');
+            hwSelect.innerHTML = '';
+            (appData.homeworks || []).forEach(hw => {
+                const opt = document.createElement('option');
+                opt.value = hw; opt.innerText = hw;
+                hwSelect.appendChild(opt);
+            });
+            renderHomeworkTable();
+        }
+
+        function renderHomeworkTable() {
+            const selectedHw = document.getElementById('hw-select').value;
+            const tbody = document.getElementById('hw-table-body');
+            tbody.innerHTML = '';
+            if (!selectedHw) return;
+
+            if (!appData.submissions) appData.submissions = {};
+            if (!appData.submissions[selectedHw]) appData.submissions[selectedHw] = {};
+
+            const cur = appData.submissions[selectedHw];
+            let subCount = 0, missCount = 0;
+
+            (appData.students || []).forEach((student, index) => {
+                const status = cur[student] || 'missing';
+                if (status === 'submitted' || status === 'late') subCount++;
+                if (status === 'missing' || status === 'redo') missCount++;
+
+                let style = 'bg-rose-100 text-rose-800', txt = '未繳交', icon = 'fa-circle-xmark';
+                if (status === 'submitted') { style = 'bg-emerald-100 text-emerald-800'; txt = '已繳交'; icon = 'fa-circle-check'; }
+                if (status === 'late') { style = 'bg-amber-100 text-amber-800'; txt = '遲交'; icon = 'fa-clock'; }
+                if (status === 'redo') { style = 'bg-blue-100 text-blue-800'; txt = '需重作'; icon = 'fa-rotate-right'; }
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-50 border-b border-slate-200';
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-center font-bold text-slate-400">${index + 1}</td>
+                    <td class="px-6 py-4 font-bold text-slate-900 text-xl">${student}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="toggleHWStatus('${selectedHw}', '${student}')" class="status-btn px-4 py-2 rounded-xl text-base font-bold border ${style}">
+                            <i class="fa-solid ${icon} mr-1"></i>${txt}
+                        </button>
+                    </td>
+                    <td class="px-6 py-4">
+                        <input type="text" value="${cur[student + '_note'] || ''}" placeholder="新增備註..." onchange="saveHWNote('${selectedHw}', '${student}', this.value)" class="w-full p-2 border-b-2 border-slate-200 outline-none">
+                    </td>`;
+                tbody.appendChild(row);
+            });
+            document.getElementById('stat-total').innerText = appData.students.length;
+            document.getElementById('stat-submitted').innerText = subCount;
+            document.getElementById('stat-missing').innerText = missCount;
+        }
+
+        function toggleHWStatus(hw, student) {
+            const next = { 'missing': 'submitted', 'submitted': 'late', 'late': 'redo', 'redo': 'missing' };
+            appData.submissions[hw][student] = next[appData.submissions[hw][student] || 'missing'];
+            saveData(); renderHomeworkTable();
+        }
+
+        function saveHWNote(hw, student, note) {
+            appData.submissions[hw][student + '_note'] = note; saveData();
+        }
+
+        function markAllAsSubmitted() {
+            const hw = document.getElementById('hw-select').value; if (!hw) return;
+            appData.students.forEach(s => appData.submissions[hw][s] = 'submitted');
+            saveData(); renderHomeworkTable();
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            if (document.getElementById('admin-password-input').value === '0926') {
+                isAdminLoggedIn = true;
+                document.getElementById('admin-login-card').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                document.getElementById('admin-badge').classList.remove('hidden');
+                renderAdminTab();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function adminLogout() {
+            isAdminLoggedIn = false;
+            document.getElementById('admin-login-card').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('admin-badge').classList.add('hidden');
+        }
+
+        function renderAdminTab() {
+            if (!isAdminLoggedIn) return;
+            const l = appData.lesson || {};
+            document.getElementById('edit-title').value = l.title || '';
+            document.getElementById('edit-date').value = l.date || '';
+            document.getElementById('edit-objectives').value = l.objectives || '';
+            document.getElementById('edit-announcement').value = l.announcement || '';
+            document.getElementById('edit-materials').value = l.materials || '';
+            
+            const gh = appData.github || {};
+            document.getElementById('gh-owner').value = gh.owner || '';
+            document.getElementById('gh-repo').value = gh.repo || '';
+            document.getElementById('gh-token').value = gh.token || '';
+
+            renderFlowEditList(); renderAdminStudentList(); renderAdminHomeworkList();
+        }
+
+        // ==================== 🐙 GitHub REST API 同步引擎 ====================
+        function saveGitHubConfig() {
+            appData.github = {
+                owner: document.getElementById('gh-owner').value.trim(),
+                repo: document.getElementById('gh-repo').value.trim(),
+                token: document.getElementById('gh-token').value.trim()
+            };
+            saveData();
+            updateGitHubTag();
+            loadFromGitHub();
+        }
+
+        function updateGitHubTag() {
+            const tag = document.getElementById('github-status-tag');
+            if (appData.github && appData.github.token) {
+                tag.className = "text-xs bg-emerald-800 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-500 font-bold inline-flex items-center";
+                tag.innerHTML = `<i class="fa-brands fa-github mr-1"></i>GitHub 雲端已連線`;
+            } else {
+                tag.className = "text-xs bg-indigo-900 text-indigo-200 px-2.5 py-0.5 rounded-full border border-indigo-500 font-bold inline-flex items-center";
+                tag.innerHTML = `<i class="fa-brands fa-github mr-1"></i>尚未連線 GitHub`;
+            }
+        }
+
+        // 從 GitHub 讀取 data.json
+        async function loadFromGitHub() {
+            const { owner, repo, token } = appData.github || {};
+            if (!owner || !repo || !token) return;
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+            try {
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    appData.githubSha = json.sha; // 保存 SHA 供更新使用
+                    const decodedData = JSON.parse(decodeURIComponent(escape(atob(json.content))));
+                    appData = { ...decodedData, github: appData.github, githubSha: json.sha };
+                    localStorage.setItem('teacher_app_data_gh', JSON.stringify(appData));
+                    renderLessonTab();
+                    if (isAdminLoggedIn) renderAdminTab();
+                    alert('成功從 GitHub 載入最新課堂數據！');
+                }
+            } catch (err) {
+                console.log('GitHub 讀取失敗，使用本機暫存檔');
+            }
+        }
+
+        // 自動寫入/更新至 GitHub 的 data.json
+        async function saveToGitHub() {
+            const { owner, repo, token } = appData.github || {};
+            if (!owner || !repo || !token) return;
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+            
+            // 若 SHA 遺失，先拉取最新 SHA
+            let sha = appData.githubSha;
+            if (!sha) {
+                try {
+                    const getRes = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+                    if (getRes.ok) {
+                        const getJson = await getRes.json();
+                        sha = getJson.sha;
+                    }
+                } catch(e){}
+            }
+
+            // UTF-8 轉成 Base64
+            const contentB64 = btoa(unescape(encodeURIComponent(JSON.stringify(appData, null, 2))));
+            
+            const payload = {
+                message: `Auto-update classroom data (${new Date().toLocaleString()})`,
+                content: contentB64,
+                sha: sha || undefined
+            };
+
+            try {
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const resJson = await res.json();
+                    appData.githubSha = resJson.content.sha;
+                    localStorage.setItem('teacher_app_data_gh', JSON.stringify(appData));
+                }
+            } catch (e) {
+                console.error('GitHub 上傳失敗');
+            }
+        }
+
+        // --- 輔助編輯函數 ---
+        function renderFlowEditList() {
+            const container = document.getElementById('edit-flow-container');
+            container.innerHTML = '';
+            (appData.lesson.flow || []).forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="flex gap-3 items-center">
+                        <input type="text" value="${item.time || ''}" placeholder="時間" class="flow-time w-32 p-3 border-2 rounded-xl text-base font-bold">
+                        <input type="text" value="${item.title || ''}" placeholder="標題" class="flow-title w-1/3 p-3 border-2 rounded-xl text-base font-bold">
+                        <input type="text" value="${item.detail || ''}" placeholder="詳細說明" class="flow-detail flex-grow p-3 border-2 rounded-xl text-base">
+                        <button onclick="removeFlowStep(${index})" class="text-rose-600 px-3 py-2 text-xl"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
+            });
+        }
+
+        function addFlowStep() {
+            if (!appData.lesson.flow) appData.lesson.flow = [];
+            appData.lesson.flow.push({ time: '', title: '', detail: '' });
+            renderFlowEditList();
+        }
+
+        function removeFlowStep(index) {
+            appData.lesson.flow.splice(index, 1); renderFlowEditList();
+        }
+
+        function saveLessonData() {
+            appData.lesson.title = document.getElementById('edit-title').value;
+            appData.lesson.date = document.getElementById('edit-date').value;
+            appData.lesson.objectives = document.getElementById('edit-objectives').value;
+            appData.lesson.announcement = document.getElementById('edit-announcement').value;
+            appData.lesson.materials = document.getElementById('edit-materials').value;
+
+            const times = document.querySelectorAll('.flow-time');
+            const titles = document.querySelectorAll('.flow-title');
+            const details = document.querySelectorAll('.flow-detail');
+            appData.lesson.flow = [];
+            times.forEach((el, i) => {
+                if (titles[i].value || el.value) {
+                    appData.lesson.flow.push({ time: el.value, title: titles[i].value, detail: details[i].value });
+                }
+            });
+            saveData(); alert('課堂內容已儲存並自動寫入 GitHub！');
+        }
+
+        function batchImportStudents() {
+            const text = document.getElementById('import-students-text').value;
+            const names = text.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            if (names.length > 0 && confirm(`確定匯入 ${names.length} 位學生？`)) {
+                appData.students = names; 
+                uncalledStudents = [...names];
+                saveData(); 
+                renderAdminStudentList(); 
+                alert('匯入成功並已更新抽問名單！');
+            }
+        }
+
+        function renderAdminStudentList() {
+            const listDiv = document.getElementById('admin-student-list');
+            document.getElementById('admin-student-count').innerText = appData.students.length;
+            listDiv.innerHTML = '';
+            appData.students.forEach((s, i) => {
+                listDiv.innerHTML += `<div class="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-200 font-bold"><span>${i+1}. ${s}</span></div>`;
+            });
+        }
+
+        function addNewHomework() {
+            const input = document.getElementById('new-hw-name');
+            const name = input.value.trim();
+            if (name && !appData.homeworks.includes(name)) {
+                appData.homeworks.push(name); input.value = ''; saveData(); renderAdminHomeworkList();
+            }
+        }
+
+        function renderAdminHomeworkList() {
+            const container = document.getElementById('admin-hw-list');
+            container.innerHTML = '';
+            appData.homeworks.forEach(hw => {
+                container.innerHTML += `<span class="px-4 py-2 rounded-xl text-base font-bold bg-slate-100 text-slate-800 border border-slate-300">${hw}</span>`;
+            });
+        }
+
+        window.onload = function() { 
+            updateGitHubTag();
+            renderLessonTab();
+            if (appData.github && appData.github.token) {
+                loadFromGitHub();
+            }
+        };
+    </script>
+</body>
+</html>
