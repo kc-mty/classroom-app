@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧課堂流程與家課管理系統 (USB純離線版)</title>
+    <title>智慧課堂流程與家課管理系統 (USB純離線防呆版)</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; font-size: 18px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
         
+        #unsaved-banner { background-color: #ef4444; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 16px; display: none; position: sticky; top: 0; z-index: 60; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
         header { background-color: #3730a3; color: white; padding: 16px 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50; }
         .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .logo-title { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
@@ -60,12 +62,17 @@
 </head>
 <body>
 
+    <!-- 頂部未儲存紅條警告 -->
+    <div id="unsaved-banner">
+        ⚠️ 注意：課堂紀錄已變更！下課前請點擊「後台管理 ➔ 儲存並更新檔案」以帶走最新資料！
+    </div>
+
     <!-- 頂部導覽列 -->
     <header>
         <div class="header-container">
             <div class="logo-title">
                 🏫 智慧課堂管理系統
-                <span class="tag-offline">💾 USB 單檔自我儲存版</span>
+                <span class="tag-offline">💾 USB 防呆版</span>
             </div>
             <nav>
                 <button onclick="switchTab('lesson')" id="btn-lesson" class="nav-btn active">📖 課堂內容</button>
@@ -81,7 +88,6 @@
         <!-- ==================== 分頁一：課堂內容 + 隨機抽問 ==================== -->
         <section id="tab-lesson" class="tab-panel active">
             
-            <!-- 🎲 課堂隨機抽問學生工具箱 -->
             <div class="picker-box">
                 <div>
                     <span style="background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 12px; font-size: 14px;">🎲 課堂互動抽問</span>
@@ -97,7 +103,6 @@
                 </div>
             </div>
 
-            <!-- 課堂資訊展示卡片 -->
             <div class="card">
                 <div class="card-header">
                     <div>
@@ -167,48 +172,57 @@
         <!-- ==================== 分頁三：後台管理 ==================== -->
         <section id="tab-admin" class="tab-panel">
 
-            <!-- 登入驗證牆 -->
+            <!-- 登入驗證牆 (已移除所有提示密碼文字) -->
             <div id="admin-login-card" class="card" style="max-width: 500px; margin: 40px auto; text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
                 <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">後台管理驗證</h2>
                 <form onsubmit="handleAdminLogin(event)">
-                    <input type="password" id="admin-password-input" placeholder="請輸入密碼 (預設: 0926)" style="text-align: center; font-weight: bold;">
-                    <p id="login-error" style="color: #dc2626; font-size: 14px; margin-top: 8px; display: none;">密碼錯誤！</p>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;">解鎖後台</button>
+                    <input type="password" id="admin-password-input" placeholder="請輸入管理密碼" style="text-align: center; font-weight: bold;">
+                    <p id="login-error" style="color: #dc2626; font-size: 14px; margin-top: 8px; display: none;">密碼錯誤！請重新輸入。</p>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;">解鎖進入後台</button>
                 </form>
             </div>
 
             <!-- 後台核心內容 -->
             <div id="admin-panel" style="display: none;">
                 
-                <!-- USB 儲存操作引導區 -->
                 <div class="save-banner">
-                    <h3 style="color: #1e40af; font-size: 22px; font-weight: bold; margin-bottom: 8px;">💾 離線資料儲存中心</h3>
-                    <p style="color: #1e3a8a; font-size: 16px; margin-bottom: 16px;">
-                        點擊下方按鈕會生成最新的 `index.html` 網頁檔。下載後**將檔案拉回 USB 隨身碟覆蓋舊檔**，即可完美移轉至下一間教室！
+                    <h3 style="color: #1e40af; font-size: 22px; font-weight: bold; margin-bottom: 8px;">💾 USB 資料儲存中心</h3>
+                    <p style="color: #1e3a8a; font-size: 15px; margin-bottom: 16px;">
+                        點擊下方按鈕可生成包含最新資料的網頁檔：
                     </p>
-                    <button onclick="saveSelfToHTML()" class="btn btn-success" style="font-size: 20px; padding: 14px 28px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        💾 匯出最新 HTML 檔 (準備存至 USB)
-                    </button>
+                    <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+                        <button onclick="saveSelfToHTML()" class="btn btn-success" style="font-size: 18px; padding: 12px 24px;">
+                            💾 下載最新 HTML 檔 (蓋過 USB 檔)
+                        </button>
+                        <button onclick="exportDataJson()" class="btn btn-primary" style="font-size: 18px; padding: 12px 24px;">
+                            📄 僅導出 data.json
+                        </button>
+                    </div>
+                    <div style="margin-top: 16px; border-top: 1px dashed #93c5fd; padding-top: 12px;">
+                        <label class="btn btn-secondary" style="font-size: 14px; cursor: pointer;">
+                            📂 匯入 USB 內的 data.json 檔
+                            <input type="file" accept=".json" onchange="importDataJson(event)" style="display: none;">
+                        </label>
+                    </div>
                 </div>
 
-                <!-- 課堂內容編輯器 -->
                 <div class="card">
                     <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">✏️ 編輯課堂內容</h3>
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
                         <div>
                             <label style="font-weight: bold; font-size: 14px;">課堂單元主題</label>
-                            <input type="text" id="edit-title">
+                            <input type="text" id="edit-title" oninput="markDirty()">
                         </div>
                         <div>
                             <label style="font-weight: bold; font-size: 14px;">上課日期</label>
-                            <input type="text" id="edit-date">
+                            <input type="text" id="edit-date" oninput="markDirty()">
                         </div>
                     </div>
 
                     <div style="margin-bottom: 16px;">
                         <label style="font-weight: bold; font-size: 14px;">課堂學習目標</label>
-                        <textarea id="edit-objectives" rows="2"></textarea>
+                        <textarea id="edit-objectives" rows="2" oninput="markDirty()"></textarea>
                     </div>
 
                     <div style="margin-bottom: 16px;">
@@ -220,16 +234,15 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                         <div>
                             <label style="font-weight: bold; font-size: 14px;">課後作業 / 公告</label>
-                            <textarea id="edit-announcement" rows="2"></textarea>
+                            <textarea id="edit-announcement" rows="2" oninput="markDirty()"></textarea>
                         </div>
                         <div>
                             <label style="font-weight: bold; font-size: 14px;">準備器材 / 教具</label>
-                            <textarea id="edit-materials" rows="2"></textarea>
+                            <textarea id="edit-materials" rows="2" oninput="markDirty()"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- 學生名單管理 -->
                 <div class="card">
                     <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">👥 學生名單管理</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -245,7 +258,6 @@
                     </div>
                 </div>
 
-                <!-- 習作管理 -->
                 <div class="card">
                     <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">📚 習作項目管理</h3>
                     <div style="display: flex; gap: 12px; max-width: 480px; margin-bottom: 16px;">
@@ -260,7 +272,7 @@
 
     </main>
 
-    <!-- 📦 嵌入式資料庫儲存區 (正確語法的 JSON 格式) -->
+    <!-- 📦 嵌入式 JSON 資料庫 -->
     <script id="embedded-data" type="application/json">
 {
   "lesson": {
@@ -307,23 +319,30 @@
 }
     </script>
 
-    <!-- 核心運作邏輯 -->
     <script>
         let appData;
+        let isDirty = false;
 
-        // 1. 初始化資料讀取 (精確讀取內嵌的 JSON 標籤)
+        function markDirty() {
+            isDirty = true;
+            document.getElementById('unsaved-banner').style.display = 'block';
+        }
+
+        function clearDirty() {
+            isDirty = false;
+            document.getElementById('unsaved-banner').style.display = 'none';
+        }
+
         try {
             const rawEmbedded = document.getElementById('embedded-data').textContent;
             appData = JSON.parse(rawEmbedded);
         } catch (e) {
-            console.error("內嵌資料解析出錯，降級為預設結構", e);
             appData = { lesson: {}, students: [], homeworks: [], submissions: {} };
         }
 
         let uncalledStudents = [];
         let isAdminLoggedIn = false;
 
-        // 2. 切換分頁
         function switchTab(tabId) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -339,7 +358,6 @@
             if (tabId === 'admin') renderAdminTab();
         }
 
-        // ==================== 🎲 隨機點名邏輯 ====================
         function resetPickerHistory() {
             uncalledStudents = [...(appData.students || [])];
             updatePickerCount();
@@ -382,7 +400,6 @@
             }, 70);
         }
 
-        // ==================== 渲染畫面 ====================
         function renderLessonTab() {
             if (uncalledStudents.length === 0 && appData.students) {
                 uncalledStudents = [...appData.students];
@@ -453,7 +470,7 @@
                         </button>
                     </td>
                     <td>
-                        <input type="text" value="${cur[student + '_note'] || ''}" data-student="${student}" placeholder="新增備註..." class="hw-note-input" onchange="saveHWNote('${selectedHw}', '${student}', this.value)" style="border:none; border-bottom:1px solid #cbd5e1; border-radius:0; padding:4px;">
+                        <input type="text" value="${cur[student + '_note'] || ''}" data-student="${student}" placeholder="新增備註..." class="hw-note-input" oninput="saveHWNote('${selectedHw}', '${student}', this.value)" style="border:none; border-bottom:1px solid #cbd5e1; border-radius:0; padding:4px;">
                     </td>`;
                 tbody.appendChild(row);
             });
@@ -465,21 +482,25 @@
         function toggleHWStatus(hw, student) {
             const next = { 'missing': 'submitted', 'submitted': 'late', 'late': 'redo', 'redo': 'missing' };
             appData.submissions[hw][student] = next[appData.submissions[hw][student] || 'missing'];
+            markDirty();
             renderHomeworkTable();
         }
 
         function saveHWNote(hw, student, note) {
             appData.submissions[hw][student + '_note'] = note;
+            markDirty();
         }
 
         function markAllAsSubmitted() {
             const hw = document.getElementById('hw-select').value; if (!hw) return;
             appData.students.forEach(s => appData.submissions[hw][s] = 'submitted');
+            markDirty();
             renderHomeworkTable();
         }
 
         function handleAdminLogin(e) {
             e.preventDefault();
+            // 後台密碼為 0926 (僅於 JS 內部進行驗證)
             if (document.getElementById('admin-password-input').value === '0926') {
                 isAdminLoggedIn = true;
                 document.getElementById('admin-login-card').style.display = 'none';
@@ -502,7 +523,6 @@
             renderFlowEditList(); renderAdminStudentList(); renderAdminHomeworkList();
         }
 
-        // 強制先同步頁面上所有文字框內容至記憶體
         function syncAllInputsToData() {
             if (isAdminLoggedIn) {
                 const titleEl = document.getElementById('edit-title');
@@ -545,16 +565,11 @@
             }
         }
 
-        // 💾 核心：單檔自我儲存寫入機制
         function saveSelfToHTML() {
-            // Step 1: 自動同步畫面上所有文字框
             syncAllInputsToData();
-
-            // Step 2: 寫回 embedded-data 腳本
             const dataScript = document.getElementById('embedded-data');
             dataScript.textContent = "\n" + JSON.stringify(appData, null, 2) + "\n";
 
-            // Step 3: 擷取完整 DOM 並打包下載
             const fullHTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
 
             const blob = new Blob([fullHTML], { type: "text/html;charset=utf-8" });
@@ -567,7 +582,48 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            alert("【最新網頁已生成並下載】\n\n重要提醒：\n瀏覽器已將最新的 index.html 下載到您的電腦「下載 (Downloads)」資料夾。\n請將該檔案【複製並覆蓋】至 USB 隨身碟，即可在其他教室開啟最新紀錄！");
+            clearDirty();
+            alert("【已匯出最新 index.html】\n請將下載資料夾裡的 index.html 拉回 USB 蓋過舊檔！");
+        }
+
+        function exportDataJson() {
+            syncAllInputsToData();
+            const blob = new Blob([JSON.stringify(appData, null, 2)], { type: "application/json;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "data.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            clearDirty();
+            alert("【已匯出 data.json】請直接存入 USB！");
+        }
+
+        function importDataJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && imported.lesson && imported.students) {
+                        appData = imported;
+                        uncalledStudents = [...appData.students];
+                        renderLessonTab();
+                        if (isAdminLoggedIn) renderAdminTab();
+                        clearDirty();
+                        alert("【成功載入 data.json】數據已同步更新！");
+                    } else {
+                        alert("檔案格式不正確！");
+                    }
+                } catch (err) {
+                    alert("JSON 解析失敗！");
+                }
+            };
+            reader.readAsText(file);
         }
 
         function renderFlowEditList() {
@@ -576,9 +632,9 @@
             (appData.lesson.flow || []).forEach((item, index) => {
                 container.innerHTML += `
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" value="${item.time || ''}" placeholder="時間" class="flow-time-input" style="width:120px; margin:0;">
-                        <input type="text" value="${item.title || ''}" placeholder="步驟標題" class="flow-title-input" style="width:200px; margin:0;">
-                        <input type="text" value="${item.detail || ''}" placeholder="詳細說明" class="flow-detail-input" style="margin:0;">
+                        <input type="text" value="${item.time || ''}" placeholder="時間" class="flow-time-input" oninput="markDirty()" style="width:120px; margin:0;">
+                        <input type="text" value="${item.title || ''}" placeholder="步驟標題" class="flow-title-input" oninput="markDirty()" style="width:200px; margin:0;">
+                        <input type="text" value="${item.detail || ''}" placeholder="詳細說明" class="flow-detail-input" oninput="markDirty()" style="margin:0;">
                         <button onclick="removeFlowStep(${index})" class="btn btn-secondary" style="padding:4px 10px; color:#dc2626;">🗑️</button>
                     </div>`;
             });
@@ -587,11 +643,14 @@
         function addFlowStep() {
             if (!appData.lesson.flow) appData.lesson.flow = [];
             appData.lesson.flow.push({ time: '', title: '', detail: '' });
+            markDirty();
             renderFlowEditList();
         }
 
         function removeFlowStep(index) {
-            appData.lesson.flow.splice(index, 1); renderFlowEditList();
+            appData.lesson.flow.splice(index, 1);
+            markDirty();
+            renderFlowEditList();
         }
 
         function batchImportStudents() {
@@ -600,8 +659,8 @@
             if (names.length > 0 && confirm(`確定匯入 ${names.length} 位學生？`)) {
                 appData.students = names;
                 uncalledStudents = [...names];
+                markDirty();
                 renderAdminStudentList();
-                alert('學生名單已更新！請記得點擊「匯出最新 HTML 檔」並拉回 USB。');
             }
         }
 
@@ -618,7 +677,10 @@
             const input = document.getElementById('new-hw-name');
             const name = input.value.trim();
             if (name && !appData.homeworks.includes(name)) {
-                appData.homeworks.push(name); input.value = ''; renderAdminHomeworkList();
+                appData.homeworks.push(name);
+                input.value = '';
+                markDirty();
+                renderAdminHomeworkList();
             }
         }
 
