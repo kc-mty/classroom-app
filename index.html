@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧課堂流程與家課管理系統 (USB純離線升級版)</title>
+    <title>智慧課堂流程與家課管理系統 (USB純離線總覽版)</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; font-size: 18px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
@@ -53,17 +53,24 @@
         .btn-warning { background-color: #d97706; color: white; }
         .btn-secondary { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
 
+        /* 模式切換按鈕組 */
+        .view-mode-btn { padding: 8px 18px; font-size: 16px; font-weight: bold; border-radius: 10px; border: 2px solid #cbd5e1; background: white; color: #475569; cursor: pointer; }
+        .view-mode-btn.active { background: #4f46e5; color: white; border-color: #4f46e5; }
+
         .flow-item { background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; display: flex; gap: 16px; align-items: flex-start; }
         .flow-time { background-color: #4338ca; color: white; padding: 4px 12px; border-radius: 6px; font-size: 15px; font-weight: bold; flex-shrink: 0; }
         
+        .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
-        th { background-color: #f8fafc; font-weight: bold; color: #475569; font-size: 18px; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; font-weight: bold; color: #475569; font-size: 17px; whitespace: nowrap; }
 
         input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 16px; margin-top: 6px; }
         input:focus, textarea:focus, select:focus { border-color: #4f46e5; outline: none; }
         
-        .status-btn { padding: 8px 24px; border-radius: 20px; font-size: 18px; font-weight: bold; border: none; cursor: pointer; width: 100%; max-width: 160px; }
+        .status-btn { padding: 8px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; width: 100%; max-width: 160px; }
+        .status-badge-sm { padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: bold; border: none; cursor: pointer; white-space: nowrap; display: inline-block; }
+        
         .status-submitted { background-color: #d1fae5; color: #065f46; }
         .status-missing { background-color: #ffe4e6; color: #9f1239; }
         .status-late { background-color: #fef3c7; color: #92400e; }
@@ -82,7 +89,7 @@
         <div class="header-container">
             <div class="logo-title">
                 🏫 <span id="txt-app-title">智慧課堂管理系統</span>
-                <span class="tag-offline">💾 USB 防呆版</span>
+                <span class="tag-offline">💾 USB 總覽版</span>
             </div>
             <div class="header-controls">
                 <button onclick="toggleLanguage()" class="lang-btn">🌐 <span id="txt-lang-toggle">English</span></button>
@@ -150,46 +157,75 @@
             </div>
         </section>
 
-        <!-- ==================== 分頁二：家課交收情況 (已優化，刪除備註欄 + 增加未交名單) ==================== -->
+        <!-- ==================== 分頁二：家課交收情況 (含單一檢視與全班總覽矩陣) ==================== -->
         <section id="tab-homework" class="tab-panel">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label style="font-weight: bold;" id="txt-select-hw-label">選擇習作：</label>
-                        <select id="hw-select" onchange="renderHomeworkTable()" style="width: auto; min-width: 260px; font-weight: bold; font-size: 18px;"></select>
+                
+                <!-- 檢視模式切換器 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="switchHwViewMode('single')" id="btn-hw-view-single" class="view-mode-btn active">📋 <span id="txt-view-single">單一習作檢視</span></button>
+                        <button onclick="switchHwViewMode('matrix')" id="btn-hw-view-matrix" class="view-mode-btn">📊 <span id="txt-view-matrix">全班功課總覽</span></button>
                     </div>
-                    <div style="display: flex; gap: 12px; font-size: 15px; font-weight: bold;">
+                    <div style="font-size: 15px; font-weight: bold; display: flex; gap: 12px;">
                         <span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-total">總人數</span>：<strong id="stat-total">0</strong></span>
-                        <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-submitted">已繳交</span>：<strong id="stat-submitted">0</strong></span>
-                        <span style="background: #ffe4e6; color: #9f1239; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-missing">未繳交</span>：<strong id="stat-missing">0</strong></span>
                     </div>
                 </div>
 
-                <!-- 🚨 未交功課學生名單特別展示區 -->
-                <div class="missing-students-box">
-                    <div class="missing-students-title">
-                        <span id="txt-missing-box-title">⚠️ 未交功課學生名單</span>
-                        <button onclick="copyMissingList()" class="btn btn-secondary" style="font-size: 13px; padding: 4px 10px;" id="btn-copy-missing">📋 複製名單</button>
+                <!-- 模式 A：單一習作詳細檢視 -->
+                <div id="hw-view-single">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <label style="font-weight: bold;" id="txt-select-hw-label">選擇習作：</label>
+                            <select id="hw-select" onchange="renderHomeworkTable()" style="width: auto; min-width: 260px; font-weight: bold; font-size: 18px;"></select>
+                        </div>
+                        <div style="display: flex; gap: 12px; font-size: 15px; font-weight: bold;">
+                            <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-submitted">已繳交</span>：<strong id="stat-submitted">0</strong></span>
+                            <span style="background: #ffe4e6; color: #9f1239; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-missing">未繳交</span>：<strong id="stat-missing">0</strong></span>
+                        </div>
                     </div>
-                    <div id="missing-students-list" class="missing-tag-list"></div>
+
+                    <!-- 未交功課學生名單特別展示區 -->
+                    <div class="missing-students-box">
+                        <div class="missing-students-title">
+                            <span id="txt-missing-box-title">⚠️ 未交功課學生名單</span>
+                            <button onclick="copyMissingList()" class="btn btn-secondary" style="font-size: 13px; padding: 4px 10px;" id="btn-copy-missing">📋 複製名單</button>
+                        </div>
+                        <div id="missing-students-list" class="missing-tag-list"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 14px; color: #64748b;" id="txt-hw-hint">💡 點擊按鈕切換狀態：已交 ➔ 未交 ➔ 遲交 ➔ 重作</span>
+                        <button onclick="markAllAsSubmitted()" class="btn btn-primary" style="font-size: 14px; padding: 6px 12px;" id="btn-mark-all">全選標示為已交</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px; text-align: center;">#</th>
+                                    <th id="th-student-name">學生姓名</th>
+                                    <th style="width: 220px; text-align: center;" id="th-hw-status">繳交狀態 (點擊切換)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hw-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 14px; color: #64748b;" id="txt-hw-hint">💡 點擊按鈕切換狀態：已交 ➔ 未交 ➔ 遲交 ➔ 重作</span>
-                    <button onclick="markAllAsSubmitted()" class="btn btn-primary" style="font-size: 14px; padding: 6px 12px;" id="btn-mark-all">全選標示為已交</button>
+                <!-- 模式 B：全班功課總覽矩陣表 -->
+                <div id="hw-view-matrix" style="display: none;">
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #64748b;" id="txt-matrix-hint">
+                        💡 全檢視模式：直欄為每份習作，橫列為每位學生。點擊內部狀態標籤可直接修改！
+                    </div>
+                    <div class="table-responsive">
+                        <table style="border: 1px solid #e2e8f0;">
+                            <thead id="hw-matrix-head"></thead>
+                            <tbody id="hw-matrix-body"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- 簡化後的清爽表格 (無備註欄) -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 80px; text-align: center;">#</th>
-                            <th id="th-student-name">學生姓名</th>
-                            <th style="width: 220px; text-align: center;" id="th-hw-status">繳交狀態 (點擊切換)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hw-table-body"></tbody>
-                </table>
             </div>
         </section>
 
@@ -371,6 +407,7 @@
     <script>
         let appData;
         let isDirty = false;
+        let currentHwViewMode = 'single'; // 'single' 或 'matrix'
 
         // 雙語字典配置
         const i18n = {
@@ -403,6 +440,10 @@
                 markAllBtn: "全選標示為已交",
                 thStudentName: "學生姓名",
                 thHwStatus: "繳交狀態 (點擊切換)",
+                viewSingle: "單一習作檢視",
+                viewMatrix: "全班功課總覽",
+                matrixHint: "💡 全檢視模式：直欄為每份習作，橫列為每位學生。點擊內部狀態標籤可直接修改！",
+                thCompletionRate: "總繳交率",
                 adminLoginTitle: "後台管理驗證",
                 loginErr: "密碼錯誤！請重新輸入。",
                 loginUnlockBtn: "解鎖進入後台",
@@ -462,6 +503,10 @@
                 markAllBtn: "Mark All Submitted",
                 thStudentName: "Student Name",
                 thHwStatus: "Status (Click to Switch)",
+                viewSingle: "Single Assignment View",
+                viewMatrix: "All Homework Overview",
+                matrixHint: "💡 Full Matrix View: Columns are homework items, rows are students. Click badges to toggle status!",
+                thCompletionRate: "Rate",
                 adminLoginTitle: "Admin Verification",
                 loginErr: "Incorrect password! Try again.",
                 loginUnlockBtn: "Unlock Admin Panel",
@@ -522,7 +567,7 @@
             markDirty();
             applyLanguageUI();
             renderLessonTab();
-            renderHomeworkTable();
+            renderHomeworkTab();
             if (isAdminLoggedIn) renderAdminTab();
         }
 
@@ -547,6 +592,10 @@
             document.getElementById('txt-flow-title').innerText = cur.flowTitle;
             document.getElementById('txt-ann-title').innerText = cur.annTitle;
             document.getElementById('txt-mat-title').innerText = cur.matTitle;
+
+            document.getElementById('txt-view-single').innerText = cur.viewSingle;
+            document.getElementById('txt-view-matrix').innerText = cur.viewMatrix;
+            document.getElementById('txt-matrix-hint').innerText = cur.matrixHint;
 
             document.getElementById('txt-select-hw-label').innerText = cur.selectHwLabel;
             document.getElementById('txt-stat-total').innerText = cur.statTotal;
@@ -604,6 +653,18 @@
             if (tabId === 'lesson') renderLessonTab();
             if (tabId === 'homework') renderHomeworkTab();
             if (tabId === 'admin') renderAdminTab();
+        }
+
+        function switchHwViewMode(mode) {
+            currentHwViewMode = mode;
+            document.getElementById('btn-hw-view-single').classList.toggle('active', mode === 'single');
+            document.getElementById('btn-hw-view-matrix').classList.toggle('active', mode === 'matrix');
+
+            document.getElementById('hw-view-single').style.display = mode === 'single' ? 'block' : 'none';
+            document.getElementById('hw-view-matrix').style.display = mode === 'matrix' ? 'block' : 'none';
+
+            if (mode === 'single') renderHomeworkTable();
+            if (mode === 'matrix') renderHomeworkMatrix();
         }
 
         function resetPickerHistory() {
@@ -684,9 +745,12 @@
                 opt.value = hw; opt.innerText = hw;
                 hwSelect.appendChild(opt);
             });
-            renderHomeworkTable();
+
+            if (currentHwViewMode === 'single') renderHomeworkTable();
+            if (currentHwViewMode === 'matrix') renderHomeworkMatrix();
         }
 
+        // 渲染模式 A：單一習作表格
         function renderHomeworkTable() {
             const selectedHw = document.getElementById('hw-select').value;
             const tbody = document.getElementById('hw-table-body');
@@ -729,7 +793,6 @@
                 tbody.appendChild(row);
             });
 
-            // 渲染未交學生名單標籤
             if (missingNames.length > 0) {
                 missingNames.forEach(name => {
                     missingBox.innerHTML += `<span class="missing-name-tag">${name}</span>`;
@@ -741,6 +804,78 @@
             document.getElementById('stat-total').innerText = appData.students.length;
             document.getElementById('stat-submitted').innerText = subCount;
             document.getElementById('stat-missing').innerText = missCount;
+        }
+
+        // 📊 渲染模式 B：全班功課總覽矩陣表 (Full Matrix View)
+        function renderHomeworkMatrix() {
+            const head = document.getElementById('hw-matrix-head');
+            const body = document.getElementById('hw-matrix-body');
+            head.innerHTML = '';
+            body.innerHTML = '';
+
+            const curLang = i18n[appData.lang];
+            const homeworks = appData.homeworks || [];
+            const students = appData.students || [];
+
+            if (homeworks.length === 0 || students.length === 0) {
+                body.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:30px;">尚無習作或學生資料！</td></tr>`;
+                return;
+            }
+
+            // 表頭：# | 學生姓名 | [功課A] | [功課B] | ... | 繳交率
+            let trHead = `<tr><th style="width:50px; text-align:center;">#</th><th style="min-width:140px;">${curLang.thStudentName}</th>`;
+            homeworks.forEach(hw => {
+                trHead += `<th style="text-align:center; min-width:130px;">${hw}</th>`;
+            });
+            trHead += `<th style="text-align:center; min-width:100px;">${curLang.thCompletionRate}</th></tr>`;
+            head.innerHTML = trHead;
+
+            // 表身：每名學生一行
+            students.forEach((student, sIdx) => {
+                let submittedCount = 0;
+                let trRow = `<tr>
+                    <td style="text-align:center; color:#94a3b8; font-weight:bold;">${sIdx + 1}</td>
+                    <td style="font-weight:bold; color:#0f172a; font-size:18px;">${student}</td>`;
+
+                homeworks.forEach(hw => {
+                    if (!appData.submissions[hw]) appData.submissions[hw] = {};
+                    const status = appData.submissions[hw][student] || 'missing';
+
+                    if (status === 'submitted' || status === 'late') submittedCount++;
+
+                    let styleClass = 'status-missing', txt = curLang.statusMissing;
+                    if (status === 'submitted') { styleClass = 'status-submitted'; txt = curLang.statusSubmitted; }
+                    if (status === 'late') { styleClass = 'status-late'; txt = curLang.statusLate; }
+                    if (status === 'redo') { styleClass = 'status-redo'; txt = curLang.statusRedo; }
+
+                    trRow += `<td style="text-align:center;">
+                        <button onclick="toggleHWStatusInMatrix('${hw}', '${student}')" class="status-badge-sm ${styleClass}">
+                            ${txt}
+                        </button>
+                    </td>`;
+                });
+
+                const rate = Math.round((submittedCount / homeworks.length) * 100);
+                let rateColor = '#059669'; // 綠色
+                if (rate < 80) rateColor = '#d97706'; // 黃色
+                if (rate < 50) rateColor = '#dc2626'; // 紅色
+
+                trRow += `<td style="text-align:center; font-weight:bold; color:${rateColor}; font-size:18px;">${rate}%</td></tr>`;
+                body.appendChild(parseHTML(trRow));
+            });
+
+            document.getElementById('stat-total').innerText = students.length;
+        }
+
+        function parseHTML(html) {
+            const t = document.createElement('template');
+            t.innerHTML = html.trim();
+            return t.content.firstChild;
+        }
+
+        function toggleHWStatusInMatrix(hw, student) {
+            toggleHWStatus(hw, student);
+            renderHomeworkMatrix();
         }
 
         function copyMissingList() {
@@ -762,9 +897,10 @@
 
         function toggleHWStatus(hw, student) {
             const next = { 'missing': 'submitted', 'submitted': 'late', 'late': 'redo', 'redo': 'missing' };
+            if (!appData.submissions[hw]) appData.submissions[hw] = {};
             appData.submissions[hw][student] = next[appData.submissions[hw][student] || 'missing'];
             markDirty();
-            renderHomeworkTable();
+            if (currentHwViewMode === 'single') renderHomeworkTable();
         }
 
         function markAllAsSubmitted() {
@@ -801,7 +937,6 @@
             renderAdminHomeworkList();
         }
 
-        // ==================== 課堂流程範本儲存與載入 ====================
         function saveCurrentFlowAsPreset() {
             syncAllInputsToData();
             const presetName = document.getElementById('preset-name-input').value.trim();
