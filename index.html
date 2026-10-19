@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧課堂流程與家課管理系統 (USB純離線防呆版)</title>
+    <title>智慧課堂流程與家課管理系統 (USB純離線升級版)</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; font-size: 18px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
         
+        /* 頂部未儲存警示條 */
         #unsaved-banner { background-color: #ef4444; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 16px; display: none; position: sticky; top: 0; z-index: 60; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         header { background-color: #3730a3; color: white; padding: 16px 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50; }
@@ -15,9 +16,13 @@
         .logo-title { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .tag-offline { font-size: 13px; background-color: #059669; color: white; padding: 3px 10px; border-radius: 20px; font-weight: bold; }
         
-        nav { display: flex; gap: 8px; background-color: rgba(30, 27, 75, 0.5); padding: 6px; border-radius: 12px; }
+        .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        nav { display: flex; gap: 6px; background-color: rgba(30, 27, 75, 0.5); padding: 6px; border-radius: 12px; }
         .nav-btn { background: none; border: none; color: #e0e7ff; padding: 10px 18px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .nav-btn.active { background-color: white; color: #312e81; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .lang-btn { background-color: #4f46e5; color: white; border: 1px solid #818cf8; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .lang-btn:hover { background-color: #4338ca; }
 
         main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; flex-grow: 1; width: 100%; }
         .tab-panel { display: none; }
@@ -27,6 +32,13 @@
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
         .card-title { font-size: 28px; font-weight: 800; color: #0f172a; }
         .date-badge { background-color: #e0e7ff; color: #3730a3; padding: 6px 14px; border-radius: 20px; font-size: 16px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
+
+        /* 未交功課學生名單特別展示卡片 */
+        .missing-students-box { background-color: #fef2f2; border: 2px solid #fca5a5; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+        .missing-students-title { color: #991b1b; font-size: 20px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .missing-tag-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .missing-name-tag { background-color: #dc2626; color: white; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 18px; box-shadow: 0 2px 4px rgba(220,38,38,0.2); }
+        .no-missing-tag { background-color: #059669; color: white; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 16px; }
 
         .picker-box { background: linear-gradient(135deg, #d97706, #ea580c); color: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
         .picker-display { background: white; color: #78350f; font-size: 32px; font-weight: 900; padding: 12px 32px; border-radius: 12px; text-align: center; min-width: 200px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
@@ -45,13 +57,13 @@
         .flow-time { background-color: #4338ca; color: white; padding: 4px 12px; border-radius: 6px; font-size: 15px; font-weight: bold; flex-shrink: 0; }
         
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
-        th { background-color: #f8fafc; font-weight: bold; color: #475569; font-size: 16px; }
+        th, td { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; font-weight: bold; color: #475569; font-size: 18px; }
 
         input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 16px; margin-top: 6px; }
         input:focus, textarea:focus, select:focus { border-color: #4f46e5; outline: none; }
         
-        .status-btn { padding: 6px 16px; border-radius: 20px; font-size: 15px; font-weight: bold; border: none; cursor: pointer; }
+        .status-btn { padding: 8px 24px; border-radius: 20px; font-size: 18px; font-weight: bold; border: none; cursor: pointer; width: 100%; max-width: 160px; }
         .status-submitted { background-color: #d1fae5; color: #065f46; }
         .status-missing { background-color: #ffe4e6; color: #9f1239; }
         .status-late { background-color: #fef3c7; color: #92400e; }
@@ -63,22 +75,23 @@
 <body>
 
     <!-- 頂部未儲存紅條警告 -->
-    <div id="unsaved-banner">
-        ⚠️ 注意：課堂紀錄已變更！下課前請點擊「後台管理 ➔ 儲存並更新檔案」以帶走最新資料！
-    </div>
+    <div id="unsaved-banner"></div>
 
     <!-- 頂部導覽列 -->
     <header>
         <div class="header-container">
             <div class="logo-title">
-                🏫 智慧課堂管理系統
+                🏫 <span id="txt-app-title">智慧課堂管理系統</span>
                 <span class="tag-offline">💾 USB 防呆版</span>
             </div>
-            <nav>
-                <button onclick="switchTab('lesson')" id="btn-lesson" class="nav-btn active">📖 課堂內容</button>
-                <button onclick="switchTab('homework')" id="btn-homework" class="nav-btn">📋 家課交收</button>
-                <button onclick="switchTab('admin')" id="btn-admin" class="nav-btn">⚙️ 後台管理</button>
-            </nav>
+            <div class="header-controls">
+                <button onclick="toggleLanguage()" class="lang-btn">🌐 <span id="txt-lang-toggle">English</span></button>
+                <nav>
+                    <button onclick="switchTab('lesson')" id="btn-lesson" class="nav-btn active">📖 <span id="txt-tab-lesson">課堂內容</span></button>
+                    <button onclick="switchTab('homework')" id="btn-homework" class="nav-btn">📋 <span id="txt-tab-hw">家課交收</span></button>
+                    <button onclick="switchTab('admin')" id="btn-admin" class="nav-btn">⚙️ <span id="txt-tab-admin">後台管理</span></button>
+                </nav>
+            </div>
         </div>
     </header>
 
@@ -90,15 +103,15 @@
             
             <div class="picker-box">
                 <div>
-                    <span style="background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 12px; font-size: 14px;">🎲 課堂互動抽問</span>
-                    <h3 style="font-size: 24px; font-weight: 800; margin-top: 4px;">隨機點名回答問題</h3>
-                    <p style="font-size: 14px; opacity: 0.9;">防重複機制：剩餘 <strong id="picker-remaining">0</strong> 人未被抽中</p>
+                    <span style="background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 12px; font-size: 14px;" id="txt-picker-tag">🎲 課堂互動抽問</span>
+                    <h3 style="font-size: 24px; font-weight: 800; margin-top: 4px;" id="txt-picker-title">隨機點名回答問題</h3>
+                    <p style="font-size: 14px; opacity: 0.9;"><span id="txt-picker-remaining">防重複機制：剩餘</span> <strong id="picker-remaining">0</strong> <span id="txt-picker-unit">人未被抽中</span></p>
                 </div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                     <div id="picker-display" class="picker-display">準備抽點</div>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <button onclick="pickRandomStudent()" class="btn btn-warning" style="font-size: 18px;">🎲 抽點學生</button>
-                        <button onclick="resetPickerHistory()" class="btn btn-secondary" style="font-size: 12px; padding: 4px 8px;">🔄 重置名單</button>
+                        <button onclick="pickRandomStudent()" class="btn btn-warning" style="font-size: 18px;" id="btn-pick-student">🎲 抽點學生</button>
+                        <button onclick="resetPickerHistory()" class="btn btn-secondary" style="font-size: 12px; padding: 4px 8px;" id="btn-reset-picker">🔄 重置名單</button>
                     </div>
                 </div>
             </div>
@@ -109,59 +122,70 @@
                         <span class="date-badge" id="display-date">2026/10/20 (二)</span>
                         <h2 class="card-title" id="display-title">載入中...</h2>
                     </div>
-                    <button onclick="switchTab('admin')" class="btn btn-secondary">✏️ 編輯內容</button>
+                    <button onclick="switchTab('admin')" class="btn btn-secondary" id="btn-edit-lesson">✏️ 編輯內容</button>
                 </div>
 
                 <div style="background-color: #fffbeb; border-left: 6px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
-                    <h3 style="color: #78350f; font-weight: bold; font-size: 18px; margin-bottom: 4px;">🎯 課堂學習目標</h3>
+                    <h3 style="color: #78350f; font-weight: bold; font-size: 18px; margin-bottom: 4px;" id="txt-obj-title">🎯 課堂學習目標</h3>
                     <div id="display-objectives" style="color: #92400e; white-space: pre-line;">-</div>
                 </div>
 
                 <div style="margin-bottom: 24px;">
-                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">⏳ 課堂流程安排</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px;">
+                        <h3 style="font-size: 20px; font-weight: bold;" id="txt-flow-title">⏳ 課堂流程安排</h3>
+                    </div>
                     <div id="display-flow-list"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; border-top: 2px solid #f1f5f9; padding-top: 16px;">
                     <div style="background-color: #eff6ff; padding: 16px; border-radius: 12px;">
-                        <h4 style="color: #1e40af; font-weight: bold; margin-bottom: 4px;">📢 課後作業 / 公告</h4>
+                        <h4 style="color: #1e40af; font-weight: bold; margin-bottom: 4px;" id="txt-ann-title">📢 課後作業 / 公告</h4>
                         <p id="display-announcement" style="color: #1e3a8a; whitespace: pre-line;">無</p>
                     </div>
                     <div style="background-color: #ecfdf5; padding: 16px; border-radius: 12px;">
-                        <h4 style="color: #065f46; font-weight: bold; margin-bottom: 4px;">🎒 課堂準備器材 / 教具</h4>
+                        <h4 style="color: #065f46; font-weight: bold; margin-bottom: 4px;" id="txt-mat-title">🎒 課堂準備器材 / 教具</h4>
                         <p id="display-materials" style="color: #064e3b; whitespace: pre-line;">無</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== 分頁二：家課交收情況 ==================== -->
+        <!-- ==================== 分頁二：家課交收情況 (已優化，刪除備註欄 + 增加未交名單) ==================== -->
         <section id="tab-homework" class="tab-panel">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <label style="font-weight: bold;">選擇習作：</label>
-                        <select id="hw-select" onchange="renderHomeworkTable()" style="width: auto; min-width: 240px;"></select>
+                        <label style="font-weight: bold;" id="txt-select-hw-label">選擇習作：</label>
+                        <select id="hw-select" onchange="renderHomeworkTable()" style="width: auto; min-width: 260px; font-weight: bold; font-size: 18px;"></select>
                     </div>
                     <div style="display: flex; gap: 12px; font-size: 15px; font-weight: bold;">
-                        <span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px;">總人數：<strong id="stat-total">0</strong></span>
-                        <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 8px;">已繳交：<strong id="stat-submitted">0</strong></span>
-                        <span style="background: #ffe4e6; color: #9f1239; padding: 6px 12px; border-radius: 8px;">未繳交：<strong id="stat-missing">0</strong></span>
+                        <span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-total">總人數</span>：<strong id="stat-total">0</strong></span>
+                        <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-submitted">已繳交</span>：<strong id="stat-submitted">0</strong></span>
+                        <span style="background: #ffe4e6; color: #9f1239; padding: 6px 12px; border-radius: 8px;"><span id="txt-stat-missing">未繳交</span>：<strong id="stat-missing">0</strong></span>
                     </div>
+                </div>
+
+                <!-- 🚨 未交功課學生名單特別展示區 -->
+                <div class="missing-students-box">
+                    <div class="missing-students-title">
+                        <span id="txt-missing-box-title">⚠️ 未交功課學生名單</span>
+                        <button onclick="copyMissingList()" class="btn btn-secondary" style="font-size: 13px; padding: 4px 10px;" id="btn-copy-missing">📋 複製名單</button>
+                    </div>
+                    <div id="missing-students-list" class="missing-tag-list"></div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 14px; color: #64748b;">💡 點擊按鈕切換狀態：<strong style="color:#059669">已交</strong> ➔ <strong style="color:#e11d48">未交</strong> ➔ <strong style="color:#d97706">遲交</strong> ➔ <strong style="color:#2563eb">重作</strong></span>
-                    <button onclick="markAllAsSubmitted()" class="btn btn-primary" style="font-size: 14px; padding: 6px 12px;">全選標示為已交</button>
+                    <span style="font-size: 14px; color: #64748b;" id="txt-hw-hint">💡 點擊按鈕切換狀態：已交 ➔ 未交 ➔ 遲交 ➔ 重作</span>
+                    <button onclick="markAllAsSubmitted()" class="btn btn-primary" style="font-size: 14px; padding: 6px 12px;" id="btn-mark-all">全選標示為已交</button>
                 </div>
 
+                <!-- 簡化後的清爽表格 (無備註欄) -->
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 60px; text-align: center;">#</th>
-                            <th style="width: 200px;">學生姓名</th>
-                            <th style="width: 180px; text-align: center;">繳交狀態</th>
-                            <th>備註 / 評語</th>
+                            <th style="width: 80px; text-align: center;">#</th>
+                            <th id="th-student-name">學生姓名</th>
+                            <th style="width: 220px; text-align: center;" id="th-hw-status">繳交狀態 (點擊切換)</th>
                         </tr>
                     </thead>
                     <tbody id="hw-table-body"></tbody>
@@ -172,14 +196,14 @@
         <!-- ==================== 分頁三：後台管理 ==================== -->
         <section id="tab-admin" class="tab-panel">
 
-            <!-- 登入驗證牆 (已移除所有提示密碼文字) -->
+            <!-- 登入驗證牆 (絕不露密碼) -->
             <div id="admin-login-card" class="card" style="max-width: 500px; margin: 40px auto; text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
-                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">後台管理驗證</h2>
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 8px;" id="txt-admin-login-title">後台管理驗證</h2>
                 <form onsubmit="handleAdminLogin(event)">
                     <input type="password" id="admin-password-input" placeholder="請輸入管理密碼" style="text-align: center; font-weight: bold;">
-                    <p id="login-error" style="color: #dc2626; font-size: 14px; margin-top: 8px; display: none;">密碼錯誤！請重新輸入。</p>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;">解鎖進入後台</button>
+                    <p id="login-error" style="color: #dc2626; font-size: 14px; margin-top: 8px; display: none;" id="txt-login-err">密碼錯誤！請重新輸入。</p>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;" id="btn-login-unlock">解鎖進入後台</button>
                 </form>
             </div>
 
@@ -187,82 +211,95 @@
             <div id="admin-panel" style="display: none;">
                 
                 <div class="save-banner">
-                    <h3 style="color: #1e40af; font-size: 22px; font-weight: bold; margin-bottom: 8px;">💾 USB 資料儲存中心</h3>
-                    <p style="color: #1e3a8a; font-size: 15px; margin-bottom: 16px;">
-                        點擊下方按鈕可生成包含最新資料的網頁檔：
+                    <h3 style="color: #1e40af; font-size: 22px; font-weight: bold; margin-bottom: 8px;" id="txt-save-banner-title">💾 USB 資料儲存中心</h3>
+                    <p style="color: #1e3a8a; font-size: 15px; margin-bottom: 16px;" id="txt-save-banner-desc">
+                        點擊下方按鈕即可匯出包含最新資料的網頁檔或數據檔：
                     </p>
                     <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
-                        <button onclick="saveSelfToHTML()" class="btn btn-success" style="font-size: 18px; padding: 12px 24px;">
+                        <button onclick="saveSelfToHTML()" class="btn btn-success" style="font-size: 18px; padding: 12px 24px;" id="btn-save-html">
                             💾 下載最新 HTML 檔 (蓋過 USB 檔)
                         </button>
-                        <button onclick="exportDataJson()" class="btn btn-primary" style="font-size: 18px; padding: 12px 24px;">
+                        <button onclick="exportDataJson()" class="btn btn-primary" style="font-size: 18px; padding: 12px 24px;" id="btn-export-json">
                             📄 僅導出 data.json
                         </button>
                     </div>
                     <div style="margin-top: 16px; border-top: 1px dashed #93c5fd; padding-top: 12px;">
                         <label class="btn btn-secondary" style="font-size: 14px; cursor: pointer;">
-                            📂 匯入 USB 內的 data.json 檔
+                            <span id="btn-import-json">📂 匯入 USB 內的 data.json 檔</span>
                             <input type="file" accept=".json" onchange="importDataJson(event)" style="display: none;">
                         </label>
                     </div>
                 </div>
 
+                <!-- 課堂流程範本儲存與管理區 -->
                 <div class="card">
-                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">✏️ 編輯課堂內容</h3>
+                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;" id="txt-flow-preset-title">💾 課堂流程範本庫</h3>
+                    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+                        <input type="text" id="preset-name-input" placeholder="輸入此流程範本名稱 (例如：測驗課流程)" style="max-width: 320px; margin-top:0;">
+                        <button onclick="saveCurrentFlowAsPreset()" class="btn btn-primary" style="flex-shrink: 0;" id="btn-save-preset">儲存目前流程為範本</button>
+                    </div>
+                    <div>
+                        <label style="font-weight: bold; font-size: 14px;" id="txt-load-preset-label">快速載入已儲存範本：</label>
+                        <div id="preset-list-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;" id="txt-edit-lesson-title">✏️ 編輯課堂內容</h3>
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">課堂單元主題</label>
+                            <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-title">課堂單元主題</label>
                             <input type="text" id="edit-title" oninput="markDirty()">
                         </div>
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">上課日期</label>
+                            <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-date">上課日期</label>
                             <input type="text" id="edit-date" oninput="markDirty()">
                         </div>
                     </div>
 
                     <div style="margin-bottom: 16px;">
-                        <label style="font-weight: bold; font-size: 14px;">課堂學習目標</label>
+                        <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-obj">課堂學習目標</label>
                         <textarea id="edit-objectives" rows="2" oninput="markDirty()"></textarea>
                     </div>
 
                     <div style="margin-bottom: 16px;">
-                        <label style="font-weight: bold; font-size: 14px;">課堂流程步驟</label>
+                        <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-flow">課堂流程步驟</label>
                         <div id="edit-flow-container" style="margin-top: 8px;"></div>
-                        <button onclick="addFlowStep()" class="btn btn-secondary" style="font-size: 14px; margin-top: 8px;">➕ 新增流程步驟</button>
+                        <button onclick="addFlowStep()" class="btn btn-secondary" style="font-size: 14px; margin-top: 8px;" id="btn-add-step">➕ 新增流程步驟</button>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">課後作業 / 公告</label>
+                            <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-ann">課後作業 / 公告</label>
                             <textarea id="edit-announcement" rows="2" oninput="markDirty()"></textarea>
                         </div>
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">準備器材 / 教具</label>
+                            <label style="font-weight: bold; font-size: 14px;" id="lbl-edit-mat">準備器材 / 教具</label>
                             <textarea id="edit-materials" rows="2" oninput="markDirty()"></textarea>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">👥 學生名單管理</h3>
+                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;" id="txt-student-mgmt-title">👥 學生名單管理</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">批次匯入學生名單 (一行一個姓名)</label>
+                            <label style="font-weight: bold; font-size: 14px;" id="lbl-batch-import">批次匯入學生名單 (一行一個姓名)</label>
                             <textarea id="import-students-text" rows="6" placeholder="陳大文&#10;林小明&#10;張美麗"></textarea>
-                            <button onclick="batchImportStudents()" class="btn btn-success" style="margin-top: 8px; font-size: 14px;">匯入並替換名單</button>
+                            <button onclick="batchImportStudents()" class="btn btn-success" style="margin-top: 8px; font-size: 14px;" id="btn-import-students">匯入並替換名單</button>
                         </div>
                         <div>
-                            <label style="font-weight: bold; font-size: 14px;">目前學生名單 (<span id="admin-student-count">0</span> 人)</label>
+                            <label style="font-weight: bold; font-size: 14px;"><span id="txt-student-list-label">目前學生名單</span> (<span id="admin-student-count">0</span> 人)</label>
                             <div id="admin-student-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; margin-top: 6px; background: #f8fafc;"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">📚 習作項目管理</h3>
+                    <h3 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;" id="txt-hw-mgmt-title">📚 習作項目管理</h3>
                     <div style="display: flex; gap: 12px; max-width: 480px; margin-bottom: 16px;">
                         <input type="text" id="new-hw-name" placeholder="輸入新習作名稱" style="margin-top:0;">
-                        <button onclick="addNewHomework()" class="btn btn-primary" style="flex-shrink: 0;">新增習作</button>
+                        <button onclick="addNewHomework()" class="btn btn-primary" style="flex-shrink: 0;" id="btn-add-hw">新增習作</button>
                     </div>
                     <div id="admin-hw-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                 </div>
@@ -275,6 +312,7 @@
     <!-- 📦 嵌入式 JSON 資料庫 -->
     <script id="embedded-data" type="application/json">
 {
+  "lang": "zh",
   "lesson": {
     "title": "第一課：科學探索與實驗基本規範",
     "date": "2026/10/20 (二)",
@@ -299,6 +337,17 @@
     "announcement": "請同學於本週五前繳交「單元一工作紙」。",
     "materials": "酒精燈、試管架、保護眼鏡"
   },
+  "flowPresets": [
+    {
+      "name": "標準 40 分鐘流程",
+      "flow": [
+        { "time": "05 分鐘", "title": "引起動機", "detail": "課前提問與複習" },
+        { "time": "20 分鐘", "title": "主要教學", "detail": "新觀念講解與範例" },
+        { "time": "10 分鐘", "title": "課堂練習", "detail": "學生自主或分組練習" },
+        { "time": "05 分鐘", "title": "總結與作業", "detail": "佈置功課與小結" }
+      ]
+    }
+  ],
   "students": [
     "陳大文",
     "林小明",
@@ -323,6 +372,128 @@
         let appData;
         let isDirty = false;
 
+        // 雙語字典配置
+        const i18n = {
+            zh: {
+                appTitle: "智慧課堂管理系統",
+                langToggle: "English",
+                tabLesson: "課堂內容",
+                tabHw: "家課交收",
+                tabAdmin: "後台管理",
+                unsavedWarning: "⚠️ 注意：課堂紀錄已變更！下課前請點擊「後台管理 ➔ 儲存並更新檔案」以帶走最新資料！",
+                pickerTag: "🎲 課堂互動抽問",
+                pickerTitle: "隨機點名回答問題",
+                pickerRemaining: "防重複機制：剩餘",
+                pickerUnit: "人未被抽中",
+                pickStudentBtn: "🎲 抽點學生",
+                resetPickerBtn: "🔄 重置名單",
+                editLessonBtn: "✏️ 編輯內容",
+                objTitle: "🎯 課堂學習目標",
+                flowTitle: "⏳ 課堂流程安排",
+                annTitle: "📢 課後作業 / 公告",
+                matTitle: "🎒 課堂準備器材 / 教具",
+                selectHwLabel: "選擇習作：",
+                statTotal: "總人數",
+                statSubmitted: "已繳交",
+                statMissing: "未繳交",
+                missingBoxTitle: "⚠️ 未交功課學生名單",
+                copyMissingBtn: "📋 複製名單",
+                noMissingMsg: "🎉 全員已繳交功課！",
+                hwHint: "💡 點擊按鈕切換狀態：已交 ➔ 未交 ➔ 遲交 ➔ 重作",
+                markAllBtn: "全選標示為已交",
+                thStudentName: "學生姓名",
+                thHwStatus: "繳交狀態 (點擊切換)",
+                adminLoginTitle: "後台管理驗證",
+                loginErr: "密碼錯誤！請重新輸入。",
+                loginUnlockBtn: "解鎖進入後台",
+                saveBannerTitle: "💾 USB 資料儲存中心",
+                saveBannerDesc: "點擊下方按鈕即可匯出包含最新資料的網頁檔或數據檔：",
+                saveHtmlBtn: "💾 下載最新 HTML 檔 (蓋過 USB 檔)",
+                exportJsonBtn: "📄 僅導出 data.json",
+                importJsonBtn: "📂 匯入 USB 內的 data.json 檔",
+                flowPresetTitle: "💾 課堂流程範本庫",
+                savePresetBtn: "儲存目前流程為範本",
+                loadPresetLabel: "快速載入已儲存範本：",
+                editLessonCardTitle: "✏️ 編輯課堂內容",
+                lblEditTitle: "課堂單元主題",
+                lblEditDate: "上課日期",
+                lblEditObj: "課堂學習目標",
+                lblEditFlow: "課堂流程步驟",
+                addStepBtn: "➕ 新增流程步驟",
+                lblEditAnn: "課後作業 / 公告",
+                lblEditMat: "準備器材 / 教具",
+                studentMgmtTitle: "👥 學生名單管理",
+                lblBatchImport: "批次匯入學生名單 (一行一個姓名)",
+                importStudentsBtn: "匯入並替換名單",
+                studentListLabel: "目前學生名單",
+                hwMgmtTitle: "📚 習作項目管理",
+                addHwBtn: "新增習作",
+                statusSubmitted: "已繳交",
+                statusMissing: "未繳交",
+                statusLate: "遲交",
+                statusRedo: "需重作"
+            },
+            en: {
+                appTitle: "Classroom Management System",
+                langToggle: "繁體中文",
+                tabLesson: "Lesson Plan",
+                tabHw: "Homework",
+                tabAdmin: "Admin",
+                unsavedWarning: "⚠️ Warning: Classroom data changed! Click 'Admin ➔ Save HTML File' before leaving!",
+                pickerTag: "🎲 Interactive Picker",
+                pickerTitle: "Random Student Picker",
+                pickerRemaining: "Anti-repeat: ",
+                pickerUnit: " students left",
+                pickStudentBtn: "🎲 Pick Student",
+                resetPickerBtn: "🔄 Reset List",
+                editLessonBtn: "✏️ Edit Plan",
+                objTitle: "🎯 Learning Objectives",
+                flowTitle: "⏳ Lesson Timeline",
+                annTitle: "📢 Homework / Notice",
+                matTitle: "🎒 Equipment / Materials",
+                selectHwLabel: "Assignment:",
+                statTotal: "Total",
+                statSubmitted: "Submitted",
+                statMissing: "Missing",
+                missingBoxTitle: "⚠️ Missing Homework Student List",
+                copyMissingBtn: "📋 Copy List",
+                noMissingMsg: "🎉 All students have submitted!",
+                hwHint: "💡 Click status to cycle: Submitted ➔ Missing ➔ Late ➔ Redo",
+                markAllBtn: "Mark All Submitted",
+                thStudentName: "Student Name",
+                thHwStatus: "Status (Click to Switch)",
+                adminLoginTitle: "Admin Verification",
+                loginErr: "Incorrect password! Try again.",
+                loginUnlockBtn: "Unlock Admin Panel",
+                saveBannerTitle: "💾 USB Storage Center",
+                saveBannerDesc: "Click below to export latest web file or data file to your USB:",
+                saveHtmlBtn: "💾 Download New HTML (Overwrite USB)",
+                exportJsonBtn: "📄 Export data.json Only",
+                importJsonBtn: "📂 Import data.json from USB",
+                flowPresetTitle: "💾 Lesson Flow Presets",
+                savePresetBtn: "Save Current Flow as Preset",
+                loadPresetLabel: "Quick Load Saved Preset:",
+                editLessonCardTitle: "✏️ Edit Lesson Content",
+                lblEditTitle: "Lesson Title",
+                lblEditDate: "Lesson Date",
+                lblEditObj: "Learning Objectives",
+                lblEditFlow: "Lesson Steps",
+                addStepBtn: "➕ Add Step",
+                lblEditAnn: "Homework / Notice",
+                lblEditMat: "Materials Needed",
+                studentMgmtTitle: "👥 Student List Management",
+                lblBatchImport: "Batch Import (One Name Per Line)",
+                importStudentsBtn: "Import & Replace",
+                studentListLabel: "Current Roster",
+                hwMgmtTitle: "📚 Assignment Management",
+                addHwBtn: "Add Assignment",
+                statusSubmitted: "Submitted",
+                statusMissing: "Missing",
+                statusLate: "Late",
+                statusRedo: "Redo"
+            }
+        };
+
         function markDirty() {
             isDirty = true;
             document.getElementById('unsaved-banner').style.display = 'block';
@@ -337,11 +508,88 @@
             const rawEmbedded = document.getElementById('embedded-data').textContent;
             appData = JSON.parse(rawEmbedded);
         } catch (e) {
-            appData = { lesson: {}, students: [], homeworks: [], submissions: {} };
+            appData = { lang: 'zh', lesson: {}, flowPresets: [], students: [], homeworks: [], submissions: {} };
         }
+
+        if (!appData.lang) appData.lang = 'zh';
+        if (!appData.flowPresets) appData.flowPresets = [];
 
         let uncalledStudents = [];
         let isAdminLoggedIn = false;
+
+        function toggleLanguage() {
+            appData.lang = appData.lang === 'zh' ? 'en' : 'zh';
+            markDirty();
+            applyLanguageUI();
+            renderLessonTab();
+            renderHomeworkTable();
+            if (isAdminLoggedIn) renderAdminTab();
+        }
+
+        function applyLanguageUI() {
+            const cur = i18n[appData.lang];
+            document.getElementById('txt-app-title').innerText = cur.appTitle;
+            document.getElementById('txt-lang-toggle').innerText = cur.langToggle;
+            document.getElementById('txt-tab-lesson').innerText = cur.tabLesson;
+            document.getElementById('txt-tab-hw').innerText = cur.tabHw;
+            document.getElementById('txt-tab-admin').innerText = cur.tabAdmin;
+            document.getElementById('unsaved-banner').innerText = cur.unsavedWarning;
+
+            document.getElementById('txt-picker-tag').innerText = cur.pickerTag;
+            document.getElementById('txt-picker-title').innerText = cur.pickerTitle;
+            document.getElementById('txt-picker-remaining').innerText = cur.pickerRemaining;
+            document.getElementById('txt-picker-unit').innerText = cur.pickerUnit;
+            document.getElementById('btn-pick-student').innerText = cur.pickStudentBtn;
+            document.getElementById('btn-reset-picker').innerText = cur.resetPickerBtn;
+
+            document.getElementById('btn-edit-lesson').innerText = cur.editLessonBtn;
+            document.getElementById('txt-obj-title').innerText = cur.objTitle;
+            document.getElementById('txt-flow-title').innerText = cur.flowTitle;
+            document.getElementById('txt-ann-title').innerText = cur.annTitle;
+            document.getElementById('txt-mat-title').innerText = cur.matTitle;
+
+            document.getElementById('txt-select-hw-label').innerText = cur.selectHwLabel;
+            document.getElementById('txt-stat-total').innerText = cur.statTotal;
+            document.getElementById('txt-stat-submitted').innerText = cur.statSubmitted;
+            document.getElementById('txt-stat-missing').innerText = cur.statMissing;
+            document.getElementById('txt-missing-box-title').innerText = cur.missingBoxTitle;
+            document.getElementById('btn-copy-missing').innerText = cur.copyMissingBtn;
+            document.getElementById('txt-hw-hint').innerText = cur.hwHint;
+            document.getElementById('btn-mark-all').innerText = cur.markAllBtn;
+            document.getElementById('th-student-name').innerText = cur.thStudentName;
+            document.getElementById('th-hw-status').innerText = cur.thHwStatus;
+
+            document.getElementById('txt-admin-login-title').innerText = cur.adminLoginTitle;
+            document.getElementById('txt-login-err').innerText = cur.loginErr;
+            document.getElementById('btn-login-unlock').innerText = cur.loginUnlockBtn;
+
+            document.getElementById('txt-save-banner-title').innerText = cur.saveBannerTitle;
+            document.getElementById('txt-save-banner-desc').innerText = cur.saveBannerDesc;
+            document.getElementById('btn-save-html').innerText = cur.saveHtmlBtn;
+            document.getElementById('btn-export-json').innerText = cur.exportJsonBtn;
+            document.getElementById('btn-import-json').innerText = cur.importJsonBtn;
+
+            document.getElementById('txt-flow-preset-title').innerText = cur.flowPresetTitle;
+            document.getElementById('btn-save-preset').innerText = cur.savePresetBtn;
+            document.getElementById('txt-load-preset-label').innerText = cur.loadPresetLabel;
+
+            document.getElementById('txt-edit-lesson-title').innerText = cur.editLessonCardTitle;
+            document.getElementById('lbl-edit-title').innerText = cur.lblEditTitle;
+            document.getElementById('lbl-edit-date').innerText = cur.lblEditDate;
+            document.getElementById('lbl-edit-obj').innerText = cur.lblEditObj;
+            document.getElementById('lbl-edit-flow').innerText = cur.lblEditFlow;
+            document.getElementById('btn-add-step').innerText = cur.addStepBtn;
+            document.getElementById('lbl-edit-ann').innerText = cur.lblEditAnn;
+            document.getElementById('lbl-edit-mat').innerText = cur.lblEditMat;
+
+            document.getElementById('txt-student-mgmt-title').innerText = cur.studentMgmtTitle;
+            document.getElementById('lbl-batch-import').innerText = cur.lblBatchImport;
+            document.getElementById('btn-import-students').innerText = cur.importStudentsBtn;
+            document.getElementById('txt-student-list-label').innerText = cur.studentListLabel;
+
+            document.getElementById('txt-hw-mgmt-title').innerText = cur.hwMgmtTitle;
+            document.getElementById('btn-add-hw').innerText = cur.addHwBtn;
+        }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -361,7 +609,7 @@
         function resetPickerHistory() {
             uncalledStudents = [...(appData.students || [])];
             updatePickerCount();
-            document.getElementById('picker-display').innerText = "準備抽點";
+            document.getElementById('picker-display').innerText = appData.lang === 'zh' ? "準備抽點" : "Ready";
         }
 
         function updatePickerCount() {
@@ -370,7 +618,8 @@
 
         function pickRandomStudent() {
             if (!appData.students || appData.students.length === 0) {
-                alert('請先至後台匯入學生名單！'); return;
+                alert(appData.lang === 'zh' ? '請先至後台匯入學生名單！' : 'Please import student list first!');
+                return;
             }
 
             if (uncalledStudents.length === 0) {
@@ -407,18 +656,18 @@
             updatePickerCount();
 
             const l = appData.lesson || {};
-            document.getElementById('display-title').innerText = l.title || '未設定主題';
-            document.getElementById('display-date').innerText = l.date || '未設定日期';
-            document.getElementById('display-objectives').innerText = l.objectives || '無';
-            document.getElementById('display-announcement').innerText = l.announcement || '無';
-            document.getElementById('display-materials').innerText = l.materials || '無';
+            document.getElementById('display-title').innerText = l.title || '-';
+            document.getElementById('display-date').innerText = l.date || '-';
+            document.getElementById('display-objectives').innerText = l.objectives || '-';
+            document.getElementById('display-announcement').innerText = l.announcement || '-';
+            document.getElementById('display-materials').innerText = l.materials || '-';
 
             const flowContainer = document.getElementById('display-flow-list');
             flowContainer.innerHTML = '';
             (l.flow || []).forEach((step, idx) => {
                 flowContainer.innerHTML += `
                     <div class="flow-item">
-                        <span class="flow-time">${step.time || `步驟 ${idx+1}`}</span>
+                        <span class="flow-time">${step.time || `Step ${idx+1}`}</span>
                         <div>
                             <div style="font-weight: bold; color: #0f172a;">${step.title}</div>
                             <div style="font-size: 15px; color: #475569; margin-top: 2px;">${step.detail}</div>
@@ -441,7 +690,10 @@
         function renderHomeworkTable() {
             const selectedHw = document.getElementById('hw-select').value;
             const tbody = document.getElementById('hw-table-body');
+            const missingBox = document.getElementById('missing-students-list');
             tbody.innerHTML = '';
+            missingBox.innerHTML = '';
+
             if (!selectedHw) return;
 
             if (!appData.submissions) appData.submissions = {};
@@ -449,34 +701,63 @@
 
             const cur = appData.submissions[selectedHw];
             let subCount = 0, missCount = 0;
+            const missingNames = [];
 
             (appData.students || []).forEach((student, index) => {
                 const status = cur[student] || 'missing';
                 if (status === 'submitted' || status === 'late') subCount++;
-                if (status === 'missing' || status === 'redo') missCount++;
+                if (status === 'missing' || status === 'redo') {
+                    missCount++;
+                    missingNames.push(student);
+                }
 
-                let styleClass = 'status-missing', txt = '未繳交';
-                if (status === 'submitted') { styleClass = 'status-submitted'; txt = '已繳交'; }
-                if (status === 'late') { styleClass = 'status-late'; txt = '遲交'; }
-                if (status === 'redo') { styleClass = 'status-redo'; txt = '需重作'; }
+                const curLang = i18n[appData.lang];
+                let styleClass = 'status-missing', txt = curLang.statusMissing;
+                if (status === 'submitted') { styleClass = 'status-submitted'; txt = curLang.statusSubmitted; }
+                if (status === 'late') { styleClass = 'status-late'; txt = curLang.statusLate; }
+                if (status === 'redo') { styleClass = 'status-redo'; txt = curLang.statusRedo; }
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td style="text-align: center; color: #94a3b8; font-weight: bold;">${index + 1}</td>
-                    <td style="font-weight: bold; color: #0f172a;">${student}</td>
+                    <td style="font-weight: bold; color: #0f172a; font-size: 20px;">${student}</td>
                     <td style="text-align: center;">
                         <button onclick="toggleHWStatus('${selectedHw}', '${student}')" class="status-btn ${styleClass}">
                             ${txt}
                         </button>
-                    </td>
-                    <td>
-                        <input type="text" value="${cur[student + '_note'] || ''}" data-student="${student}" placeholder="新增備註..." class="hw-note-input" oninput="saveHWNote('${selectedHw}', '${student}', this.value)" style="border:none; border-bottom:1px solid #cbd5e1; border-radius:0; padding:4px;">
                     </td>`;
                 tbody.appendChild(row);
             });
+
+            // 渲染未交學生名單標籤
+            if (missingNames.length > 0) {
+                missingNames.forEach(name => {
+                    missingBox.innerHTML += `<span class="missing-name-tag">${name}</span>`;
+                });
+            } else {
+                missingBox.innerHTML = `<span class="no-missing-tag">${i18n[appData.lang].noMissingMsg}</span>`;
+            }
+
             document.getElementById('stat-total').innerText = appData.students.length;
             document.getElementById('stat-submitted').innerText = subCount;
             document.getElementById('stat-missing').innerText = missCount;
+        }
+
+        function copyMissingList() {
+            const selectedHw = document.getElementById('hw-select').value;
+            if (!selectedHw) return;
+            const cur = appData.submissions[selectedHw] || {};
+            const missingNames = appData.students.filter(s => (cur[s] || 'missing') === 'missing' || cur[s] === 'redo');
+
+            if (missingNames.length === 0) {
+                alert(appData.lang === 'zh' ? '太棒了，目前沒有未交功課的學生！' : 'Great! No missing students!');
+                return;
+            }
+
+            const textToCopy = `【${selectedHw}】未交學生名單 (${missingNames.length}人)：\n` + missingNames.join('、');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(appData.lang === 'zh' ? '已成功複製未交學生名單！' : 'Copied missing list to clipboard!');
+            });
         }
 
         function toggleHWStatus(hw, student) {
@@ -484,11 +765,6 @@
             appData.submissions[hw][student] = next[appData.submissions[hw][student] || 'missing'];
             markDirty();
             renderHomeworkTable();
-        }
-
-        function saveHWNote(hw, student, note) {
-            appData.submissions[hw][student + '_note'] = note;
-            markDirty();
         }
 
         function markAllAsSubmitted() {
@@ -500,7 +776,6 @@
 
         function handleAdminLogin(e) {
             e.preventDefault();
-            // 後台密碼為 0926 (僅於 JS 內部進行驗證)
             if (document.getElementById('admin-password-input').value === '0926') {
                 isAdminLoggedIn = true;
                 document.getElementById('admin-login-card').style.display = 'none';
@@ -520,7 +795,67 @@
             document.getElementById('edit-announcement').value = l.announcement || '';
             document.getElementById('edit-materials').value = l.materials || '';
 
-            renderFlowEditList(); renderAdminStudentList(); renderAdminHomeworkList();
+            renderFlowPresetsList();
+            renderFlowEditList(); 
+            renderAdminStudentList(); 
+            renderAdminHomeworkList();
+        }
+
+        // ==================== 課堂流程範本儲存與載入 ====================
+        function saveCurrentFlowAsPreset() {
+            syncAllInputsToData();
+            const presetName = document.getElementById('preset-name-input').value.trim();
+            if (!presetName) {
+                alert(appData.lang === 'zh' ? '請輸入範本名稱！' : 'Please enter preset name!');
+                return;
+            }
+
+            if (!appData.flowPresets) appData.flowPresets = [];
+            appData.flowPresets.push({
+                name: presetName,
+                flow: JSON.parse(JSON.stringify(appData.lesson.flow || []))
+            });
+
+            document.getElementById('preset-name-input').value = '';
+            markDirty();
+            renderFlowPresetsList();
+            alert(appData.lang === 'zh' ? `已成功儲存範本「${presetName}」！` : `Preset "${presetName}" saved!`);
+        }
+
+        function loadFlowPreset(index) {
+            if (!appData.flowPresets || !appData.flowPresets[index]) return;
+            const preset = appData.flowPresets[index];
+            if (confirm(appData.lang === 'zh' ? `確定載入範本「${preset.name}」並覆蓋當前流程？` : `Load preset "${preset.name}"?`)) {
+                appData.lesson.flow = JSON.parse(JSON.stringify(preset.flow));
+                markDirty();
+                renderFlowEditList();
+                renderLessonTab();
+            }
+        }
+
+        function deleteFlowPreset(index) {
+            if (confirm(appData.lang === 'zh' ? '確定刪除此範本？' : 'Delete this preset?')) {
+                appData.flowPresets.splice(index, 1);
+                markDirty();
+                renderFlowPresetsList();
+            }
+        }
+
+        function renderFlowPresetsList() {
+            const container = document.getElementById('preset-list-container');
+            container.innerHTML = '';
+            if (!appData.flowPresets || appData.flowPresets.length === 0) {
+                container.innerHTML = `<span style="font-size:14px; color:#94a3b8;">${appData.lang === 'zh' ? '尚未儲存任何流程範本' : 'No saved presets'}</span>`;
+                return;
+            }
+
+            appData.flowPresets.forEach((p, idx) => {
+                container.innerHTML += `
+                    <span style="background:#e0e7ff; color:#3730a3; padding:6px 14px; border-radius:20px; font-size:15px; font-weight:bold; display:inline-flex; align-items:center; gap:8px;">
+                        <span onclick="loadFlowPreset(${idx})" style="cursor:pointer;" title="點擊載入此範本">📌 ${p.name}</span>
+                        <button onclick="deleteFlowPreset(${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">✕</button>
+                    </span>`;
+            });
         }
 
         function syncAllInputsToData() {
@@ -552,17 +887,6 @@
                     });
                 }
             }
-
-            const selectedHw = document.getElementById('hw-select') ? document.getElementById('hw-select').value : '';
-            if (selectedHw && appData.submissions[selectedHw]) {
-                const noteInputs = document.querySelectorAll('.hw-note-input');
-                noteInputs.forEach(input => {
-                    const student = input.getAttribute('data-student');
-                    if (student) {
-                        appData.submissions[selectedHw][student + '_note'] = input.value;
-                    }
-                });
-            }
         }
 
         function saveSelfToHTML() {
@@ -583,7 +907,7 @@
             URL.revokeObjectURL(url);
 
             clearDirty();
-            alert("【已匯出最新 index.html】\n請將下載資料夾裡的 index.html 拉回 USB 蓋過舊檔！");
+            alert(appData.lang === 'zh' ? "【已匯出最新 index.html】\n請將下載資料夾裡的 index.html 拉回 USB 蓋過舊檔！" : "Exported latest index.html! Please overwrite file in your USB!");
         }
 
         function exportDataJson() {
@@ -599,7 +923,7 @@
             URL.revokeObjectURL(url);
 
             clearDirty();
-            alert("【已匯出 data.json】請直接存入 USB！");
+            alert(appData.lang === 'zh' ? "【已匯出 data.json】請直接存入 USB！" : "Exported data.json!");
         }
 
         function importDataJson(event) {
@@ -611,11 +935,13 @@
                     const imported = JSON.parse(e.target.result);
                     if (imported && imported.lesson && imported.students) {
                         appData = imported;
+                        if (!appData.lang) appData.lang = 'zh';
                         uncalledStudents = [...appData.students];
+                        applyLanguageUI();
                         renderLessonTab();
                         if (isAdminLoggedIn) renderAdminTab();
                         clearDirty();
-                        alert("【成功載入 data.json】數據已同步更新！");
+                        alert(appData.lang === 'zh' ? "【成功載入 data.json】數據已同步更新！" : "Successfully loaded data.json!");
                     } else {
                         alert("檔案格式不正確！");
                     }
@@ -656,7 +982,7 @@
         function batchImportStudents() {
             const text = document.getElementById('import-students-text').value;
             const names = text.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-            if (names.length > 0 && confirm(`確定匯入 ${names.length} 位學生？`)) {
+            if (names.length > 0 && confirm(appData.lang === 'zh' ? `確定匯入 ${names.length} 位學生？` : `Import ${names.length} students?`)) {
                 appData.students = names;
                 uncalledStudents = [...names];
                 markDirty();
@@ -692,7 +1018,10 @@
             });
         }
 
-        window.onload = function() { renderLessonTab(); };
+        window.onload = function() {
+            applyLanguageUI();
+            renderLessonTab();
+        };
     </script>
 </body>
 </html>
